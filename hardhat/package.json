@@ -1,0 +1,26 @@
+{
+  "name": "bcd-assignment",
+  "version": "1.0.0",
+  "description": "Group 9 Members:\r 1. Luven Mark\r 2. Lim Jia Yuan\r 3. Nesya Dinasarah Napitupulu\r 4. Chan Xiao Wen",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx hardhat test",
+    "deploy": "npx hardhat ignition deploy ./ignition/modules/Lock.ts --reset --network localhost",
+    "compile": "npx hardhat compile"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/1umarc/MediTrust-BCD.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/1umarc/MediTrust-BCD/issues"
+  },
+  "homepage": "https://github.com/1umarc/MediTrust-BCD#readme",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^4.1.2",
+    "hardhat": "^2.28.1"
+  }
+}
