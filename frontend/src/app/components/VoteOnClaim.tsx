@@ -3,7 +3,7 @@ import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 
 import { Address } from 'viem'
 import { print } from '@/utils/toast'
 import daoAbi from '@/abi/MediTrustDAO.json'
-import { DAO_CONTRACT } from '@/utils/smartContractAddress'
+import { DAOContractAddress } from '@/utils/smartContractAddress'
 
 interface VoteProps {
     claimId: number
@@ -11,7 +11,7 @@ interface VoteProps {
 
 export function VoteOnClaim({ claimId }: VoteProps) {
     const { data: votes } = useReadContract({
-        address: DAO_CONTRACT as Address,
+        address: DAOContractAddress as Address,
         abi: daoAbi.abi,
         functionName: 'getClaimVotes',
         args: [claimId]
@@ -22,7 +22,7 @@ export function VoteOnClaim({ claimId }: VoteProps) {
 
     const handleVote = (support: boolean) => {
         writeContract({
-            address: DAO_CONTRACT as Address,
+            address: DAOContractAddress as Address,
             abi: daoAbi.abi,
             functionName: 'vote',
             args: [claimId, support]

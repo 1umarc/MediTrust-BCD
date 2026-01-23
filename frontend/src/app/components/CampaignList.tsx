@@ -2,12 +2,12 @@
 import { useReadContract } from 'wagmi'
 import { Address } from 'viem'
 import campaignAbi from '@/abi/MediTrustCampaign.json'
-import { CAMPAIGN_CONTRACT } from '@/utils/smartContractAddress'
+import { campaignContractAddress } from '@/utils/smartContractAddress'
 import { CampaignCard } from './CampaignCard'
 
 export function CampaignList() {
     const { data: campaignCount } = useReadContract({
-        address: CAMPAIGN_CONTRACT as Address,
+        address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
         functionName: 'campaignCount'
     })

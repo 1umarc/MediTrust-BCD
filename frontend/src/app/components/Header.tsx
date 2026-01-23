@@ -6,20 +6,20 @@ import { useAccount } from 'wagmi'
 import { useReadContract } from 'wagmi'
 import { Address } from 'viem'
 import rolesAbi from '@/abi/MediTrustRoles.json'
-import { ROLES_CONTRACT } from '@/utils/smartContractAddress'
+import { rolesContractAddress } from '@/utils/smartContractAddress'
 
 export function Header() {
     const { address } = useAccount()
 
     const { data: isHospitalRep } = useReadContract({
-        address: ROLES_CONTRACT as Address,
+        address: rolesContractAddress as Address,
         abi: rolesAbi.abi,
         functionName: 'isHospitalRep',
         args: address ? [address] : undefined
     })
 
     const { data: isDAOMember } = useReadContract({
-        address: ROLES_CONTRACT as Address,
+        address: rolesContractAddress as Address,
         abi: rolesAbi.abi,
         functionName: 'isDAOMember',
         args: address ? [address] : undefined

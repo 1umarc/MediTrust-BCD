@@ -4,7 +4,7 @@ import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther, Address } from 'viem'
 import { print } from '@/utils/toast'
 import fundsAbi from '@/abi/MediTrustFunds.json'
-import { FUNDS_CONTRACT } from '@/utils/smartContractAddress'
+import { fundsContractAddress } from '@/utils/smartContractAddress'
 
 interface DonateProps {
     campaignId: number
@@ -23,7 +23,7 @@ export function DonateToCampaign({ campaignId }: DonateProps) {
         }
 
         writeContract({
-            address: FUNDS_CONTRACT as Address,
+            address: fundsContractAddress as Address,
             abi: fundsAbi.abi,
             functionName: 'donate',
             args: [campaignId],

@@ -4,7 +4,7 @@ import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther, Address } from 'viem'
 import { print } from '@/utils/toast'
 import daoAbi from '@/abi/MediTrustDAO.json'
-import { DAO_CONTRACT } from '@/utils/smartContractAddress'
+import { DAOContractAddress } from '@/utils/smartContractAddress'
 
 interface SubmitClaimProps {
     campaignId: number
@@ -47,7 +47,7 @@ export function SubmitClaim({ campaignId }: SubmitClaimProps) {
             const ipfsHash = await uploadToIPFS(file)
             
             writeContract({
-                address: DAO_CONTRACT as Address,
+                address: DAOContractAddress as Address,
                 abi: daoAbi.abi,
                 functionName: 'submitClaim',
                 args: [campaignId, parseEther(amount), ipfsHash]

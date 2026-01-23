@@ -3,7 +3,7 @@ import { useReadContract } from 'wagmi'
 import { Address, formatEther } from 'viem'
 import Link from 'next/link'
 import campaignAbi from '@/abi/MediTrustCampaign.json'
-import { CAMPAIGN_CONTRACT } from '@/utils/smartContractAddress'
+import { campaignContractAddress } from '@/utils/smartContractAddress'
 
 interface CampaignCardProps {
     campaignId: number
@@ -11,7 +11,7 @@ interface CampaignCardProps {
 
 export function CampaignCard({ campaignId }: CampaignCardProps) {
     const { data: campaign } = useReadContract({
-        address: CAMPAIGN_CONTRACT as Address,
+        address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
         functionName: 'getCampaign',
         args: [campaignId]

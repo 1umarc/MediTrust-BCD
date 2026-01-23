@@ -4,7 +4,7 @@ import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther, Address } from 'viem'
 import { print } from '@/utils/toast'
 import campaignAbi from '@/abi/MediTrustCampaign.json'
-import { CAMPAIGN_CONTRACT } from '@/utils/smartContractAddress'
+import { campaignContractAddress } from '@/utils/smartContractAddress'
 
 export function CreateCampaign() {
     const [targetAmount, setTargetAmount] = useState('')
@@ -44,7 +44,7 @@ export function CreateCampaign() {
             const ipfsHash = await uploadToIPFS(file)
             
             writeContract({
-                address: CAMPAIGN_CONTRACT as Address,
+                address: campaignContractAddress as Address,
                 abi: campaignAbi.abi,
                 functionName: 'createCampaign',
                 args: [parseEther(targetAmount), parseInt(duration), ipfsHash]
