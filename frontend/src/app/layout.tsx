@@ -12,8 +12,8 @@ import { ToastContainer } from 'react-toastify';  //added
 import 'react-toastify/dist/ReactToastify.css';   //added
 
 export const metadata: Metadata = {
-  title: 'MediTrust',
-  description: 'Donate',
+  title: "MediTrust - DAO Medical Donations",
+  description: "Transparent, blockchain-powered medical donation platform",
 };
 
 export default async function RootLayout({

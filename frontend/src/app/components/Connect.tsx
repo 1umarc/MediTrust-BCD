@@ -4,10 +4,10 @@ export function Connect() {
   return (
     <div>
       <appkit-button
-        label="Connect"
-        balance="hide"
+        label="Connect Wallet"
+        balance="show"
         size="sm"
-        loadingLabel="Connecting"
+        loadingLabel="Connecting..."
       />
     </div>
   );

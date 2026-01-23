@@ -1,89 +1,236 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.28;
+// pragma solidity ^0.8.20;
 
-// import "./MediTrustFunds.sol";
+// import "./MediTrustRoles.sol";
 
-// /**
-//  * @title MediTrustDAO
-//  * @notice DAO governance for approving medical fund releases
-//  */
-// contract MediTrustDAO is MediTrustFunds {
+// // /**
+// //  * @title MediTrustDAO
+// //  * @notice DAO governance for approving medical fund releases
+// //  */
+// contract MediTrustDAO {
+//     MediTrustRoles public roles;
 
-//     struct MilestoneClaim {
-//         uint256 campaignId;
-//         uint256 amount;
-//         bytes32 proofHash;
+//     uint256 public constant QUORUM_PERCENT = 50;
+//     uint256 public constant APPROVAL_PERCENT = 60;
+
+//     struct ClaimVote {
 //         uint256 approvals;
-//         uint256 rejections;
+//         uint256 totalVotes;
 //         bool executed;
 //         mapping(address => bool) voted;
+//         mapping(address => bool) voteChoice;
 //     }
 
-//     uint256 public claimCount;
-//     mapping(uint256 => Claim) public claims;
+//     mapping(uint256 => ClaimVote) public claimVotes;
 
-//     uint256 public constant APPROVAL_THRESHOLD_PERCENT = 60;
+//     event Voted(uint256 claimId, address voter, bool approve);
+//     event ClaimApproved(uint256 claimId);
 
-//     event ClaimSubmitted(uint256 indexed claimId, uint256 campaignId);
-//     event Voted(uint256 indexed claimId, address voter, bool approved);
-//     event ClaimExecuted(uint256 indexed claimId);
-
-//     function submitMilestoneClaim(
-//         uint256 _campaignId,
-//         uint256 _amount,
-//         bytes32 _proofHash
-//     ) external {
-
-//         Campaign storage campaign = campaigns[_campaignId];
-
-//         require(msg.sender == campaign.patient, "Not patient");
-//         require(campaign.status == CampaignStatus.Verified, "Campaign not active");
-//         require(_amount > 0, "Invalid amount");
-//         require(_proofHash != bytes32(0), "Proof required");
-
-//         claimCount++;
-
-//         Claim storage claim = claims[claimCount];
-//         claim.campaignId = _campaignId;
-//         claim.amount = _amount;
-//         claim.proofHash = _proofHash;
-
-//         emit ClaimSubmitted(claimCount, _campaignId);
+//     constructor(address rolesAddress) {
+//         roles = MediTrustRoles(rolesAddress);
 //     }
 
-//     function voteOnClaim(uint256 _claimId, bool _approve) external onlyDAOMember {
-//         Claim storage claim = claims[_claimId];
+//     function vote(uint256 claimId, bool approve) external onlyRole(roles.DAO_MEMBER_ROLE()) {
+//         ClaimVote storage cv = claimVotes[claimId];
 
-//         require(!claim.executed, "Already executed");
-//         require(!claim.voted[msg.sender], "Already voted");
-
-//         claim.voted[msg.sender] = true;
-
-//         if (_approve) {
-//             claim.approvals++;
+//         if (cv.voted[msg.sender]) {
+//             if (cv.voteChoice[msg.sender] != approve) {
+//                 if (approve) cv.approvals++;
+//                 else cv.approvals--;
+//                 cv.voteChoice[msg.sender] = approve;
+//             }
 //         } else {
-//             claim.rejections++;
+//             cv.voted[msg.sender] = true;
+//             cv.voteChoice[msg.sender] = approve;
+//             cv.totalVotes++;
+//             if (approve) cv.approvals++;
 //         }
 
-//         emit Voted(_claimId, msg.sender, _approve);
+//         emit Voted(claimId, msg.sender, approve);
+
+//         if (isApproved(claimId) && !cv.executed) {
+//             cv.executed = true;
+//             emit ClaimApproved(claimId);
+//         }
 //     }
 
-//     function executeClaim(uint256 _claimId) external {
-//         Claim storage claim = claims[_claimId];
-//         Campaign storage campaign = campaigns[claim.campaignId];
+//     function isApproved(uint256 claimId) public view returns (bool) {
+//         ClaimVote storage cv = claimVotes[claimId];
 
-//         require(!claim.executed, "Already executed");
+//         uint256 quorum = (roles.daoMemberCount() * QUORUM_PERCENT) / 100;
+//         if (cv.totalVotes < quorum || cv.totalVotes == 0) return false;
 
-//         uint256 totalVotes = claim.approvals + claim.rejections;
-//         require(totalVotes > 0, "No votes");
+//         return (cv.approvals * 100) / cv.totalVotes >= APPROVAL_PERCENT;
+//     }
 
-//         uint256 approvalPercent = (claim.approvals * 100) / totalVotes;
-//         require(approvalPercent >= APPROVAL_THRESHOLD_PERCENT, "Not enough approvals");
-
-//         claim.executed = true;
-//         releaseFunds(claim.campaignId, claim.amount);
-
-//         emit ClaimExecuted(_claimId);
+//     modifier onlyRole(bytes32 role) {
+//         require(roles.hasRole(role, msg.sender), "Unauthorized");
+//         _;
 //     }
 // }
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "./MediTrustRoles.sol";
+
+contract MediTrustDAO {
+    MediTrustRoles public rolesContract;
+    
+    struct Claim {
+        uint256 campaignId;
+        address patient;
+        uint256 amount;
+        string ipfsHash;
+        uint256 votesFor;
+        uint256 votesAgainst;
+        mapping(address => bool) hasVoted;
+        mapping(address => bool) voteChoice;
+        bool executed;
+        uint256 createdAt;
+    }
+    
+    mapping(uint256 => Claim) public claims;
+    uint256 public claimCount;
+    
+    uint256 public constant QUORUM_PERCENTAGE = 50;
+    uint256 public constant APPROVAL_THRESHOLD = 60;
+    
+    event ClaimSubmitted(uint256 indexed claimId, uint256 indexed campaignId, address indexed patient, uint256 amount, string ipfsHash);
+    event VoteCast(uint256 indexed claimId, address indexed voter, bool support);
+    event VoteChanged(uint256 indexed claimId, address indexed voter, bool newSupport);
+    event ClaimApproved(uint256 indexed claimId);
+    event ClaimExecuted(uint256 indexed claimId, uint256 amount);
+    
+    constructor(address _rolesContract) {
+        rolesContract = MediTrustRoles(_rolesContract);
+    }
+    
+    function submitClaim(
+        uint256 _campaignId,
+        uint256 _amount,
+        string memory _ipfsHash
+    ) external returns (uint256) {
+        require(_amount > 0, "Invalid amount");
+        require(bytes(_ipfsHash).length > 0, "IPFS hash required");
+        
+        uint256 claimId = claimCount++;
+        Claim storage newClaim = claims[claimId];
+        
+        newClaim.campaignId = _campaignId;
+        newClaim.patient = msg.sender;
+        newClaim.amount = _amount;
+        newClaim.ipfsHash = _ipfsHash;
+        newClaim.votesFor = 0;
+        newClaim.votesAgainst = 0;
+        newClaim.executed = false;
+        newClaim.createdAt = block.timestamp;
+        
+        emit ClaimSubmitted(claimId, _campaignId, msg.sender, _amount, _ipfsHash);
+        return claimId;
+    }
+    
+    function vote(uint256 _claimId, bool _support) external {
+        require(rolesContract.isDAOMember(msg.sender), "Not a DAO member");
+        Claim storage claim = claims[_claimId];
+        require(!claim.executed, "Claim already executed");
+        require(_claimId < claimCount, "Invalid claim ID");
+        
+        bool hadVoted = claim.hasVoted[msg.sender];
+        bool previousVote = claim.voteChoice[msg.sender];
+        
+        if (hadVoted) {
+            // Change vote
+            if (previousVote != _support) {
+                if (previousVote) {
+                    claim.votesFor--;
+                } else {
+                    claim.votesAgainst--;
+                }
+                
+                if (_support) {
+                    claim.votesFor++;
+                } else {
+                    claim.votesAgainst++;
+                }
+                
+                claim.voteChoice[msg.sender] = _support;
+                emit VoteChanged(_claimId, msg.sender, _support);
+            }
+        } else {
+            // New vote
+            claim.hasVoted[msg.sender] = true;
+            claim.voteChoice[msg.sender] = _support;
+            
+            if (_support) {
+                claim.votesFor++;
+            } else {
+                claim.votesAgainst++;
+            }
+            
+            emit VoteCast(_claimId, msg.sender, _support);
+        }
+    }
+    
+    function isClaimApproved(uint256 _claimId) public view returns (bool) {
+        Claim storage claim = claims[_claimId];
+        uint256 totalVotes = claim.votesFor + claim.votesAgainst;
+        
+        if (totalVotes == 0) return false;
+        
+        uint256 totalDAOMembers = rolesContract.getTotalDAOMembers();
+        require(totalDAOMembers > 0, "No DAO members");
+        
+        // Check quorum: at least 50% of DAO members voted
+        uint256 quorumRequired = (totalDAOMembers * QUORUM_PERCENTAGE) / 100;
+        if (totalVotes < quorumRequired) return false;
+        
+        // Check approval: at least 60% voted in favor
+        uint256 approvalRate = (claim.votesFor * 100) / totalVotes;
+        
+        return approvalRate >= APPROVAL_THRESHOLD;
+    }
+    
+    function getClaimDetails(uint256 _claimId) external view returns (
+        uint256 campaignId,
+        address patient,
+        uint256 amount,
+        string memory ipfsHash,
+        uint256 votesFor,
+        uint256 votesAgainst,
+        bool executed,
+        uint256 createdAt
+    ) {
+        Claim storage claim = claims[_claimId];
+        return (
+            claim.campaignId,
+            claim.patient,
+            claim.amount,
+            claim.ipfsHash,
+            claim.votesFor,
+            claim.votesAgainst,
+            claim.executed,
+            claim.createdAt
+        );
+    }
+    
+    function getClaimVotes(uint256 _claimId) external view returns (uint256 votesFor, uint256 votesAgainst) {
+        Claim storage claim = claims[_claimId];
+        return (claim.votesFor, claim.votesAgainst);
+    }
+    
+    function hasVoted(uint256 _claimId, address _voter) external view returns (bool) {
+        return claims[_claimId].hasVoted[_voter];
+    }
+    
+    function getVoteChoice(uint256 _claimId, address _voter) external view returns (bool) {
+        require(claims[_claimId].hasVoted[_voter], "Has not voted");
+        return claims[_claimId].voteChoice[_voter];
+    }
+    
+    function markClaimExecuted(uint256 _claimId) external {
+        require(!claims[_claimId].executed, "Already executed");
+        claims[_claimId].executed = true;
+        emit ClaimExecuted(_claimId, claims[_claimId].amount);
+    }
+}
+
 

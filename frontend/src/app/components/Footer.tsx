@@ -2,16 +2,17 @@ import React from 'react'
 
 export function Footer() {
     return (
-        <>
-            <div className="footer-dark">
-                <div className="container xl:max-w-6xl mx-auto px-4 py-4 border-t border-gray-200 border-opacity-10">
-                    <div className="row">
-                        <div className="col-12 col-md text-center">
-                            <p className="d-block my-3">Copyright © MediTrust.com | All rights reserved.</p>
-                        </div>
-                    </div>
+        <footer className="bg-gray-800 text-white mt-auto">
+            <div className="container mx-auto px-4 py-6">
+                <div className="text-center">
+                    <p className="text-sm">
+                        Copyright © MediTrust.com | Blockchain-Powered Medical Donations
+                    </p>
+                    <p className="text-xs text-gray-400 mt-2">
+                        Transparent • Secure • DAO-Governed
+                    </p>
                 </div>
             </div>
-        </>
+        </footer>
     )
 }
