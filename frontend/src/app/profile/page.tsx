@@ -1,22 +1,20 @@
-"use client"
+'use client'
 
 import React from 'react'
-import { HomePageSection } from './components/HomePageSection'
-import Link from 'next/link'
-import { useAccount } from 'wagmi'
+import { WalletConnectionWarning } from './components/WalletConnectionWarning'
 
-
-export default function Home() {
-  const { isConnected } = useAccount()
-
+export default function ProfilePage() {
   return (
     <div className="relative min-h-screen">
       {/* Content */}
       <div className="relative z-10 flex flex-col min-h-screen">
+          
         <main className="flex-grow pt-20">
-          <HomePageSection />
+            <WalletConnectionWarning/>
         </main>
+        
       </div>
     </div>
+
   )
 }

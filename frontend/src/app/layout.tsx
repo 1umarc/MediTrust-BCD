@@ -2,6 +2,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { Header } from './components/Header';
+import { Footer } from './components/Footer';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -25,9 +27,28 @@ export default async function RootLayout({
   const cookies = headersObj.get("cookie");
 
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <Web3ContextProvider cookies={cookies}>{children}</Web3ContextProvider>
+    <html lang="en" className="dark">
+      <body className={inter.className} >
+        <Web3ContextProvider cookies={cookies}>
+
+          <Header/>
+
+        {/* Background Video - Shows on ALL pages */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="fixed inset-0 w-full h-full object-cover opacity-30"
+        >
+          <source src="/HeartBeatLine.mp4" type="video/mp4" />
+        </video>
+          
+        {children}
+
+          <Footer/>
+          
+        </Web3ContextProvider>
         <ToastContainer />
       </body>
     </html>
