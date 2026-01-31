@@ -1,141 +1,84 @@
-// pragma solidity ^0.8.20;
-
-// import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-// import "./MediTrustCampaign.sol";
-// import "./MediTrustDAO.sol";
-
-// // /**
-// //  * @title MediTrustFunds
-// //  * @notice Holds and releases donation funds securely
-// //  */
-// contract MediTrustFunds is ReentrancyGuard {
-//     MediTrustCampaign public campaignContract;
-//     MediTrustDAO public dao;
-
-//     struct Claim {
-//         uint256 campaignId;
-//         uint256 amount;
-//         string ipfsHash;
-//         bool paid;
-//     }
-
-//     uint256 public claimCounter;
-//     mapping(uint256 => Claim) public claims;
-//     mapping(uint256 => uint256) public campaignBalance;
-
-//     event DonationReceived(uint256 campaignId, address donor, uint256 amount);
-//     event ClaimSubmitted(uint256 claimId);
-//     event ClaimPaid(uint256 claimId);
-
-//     constructor(address campaignAddr, address daoAddr) {
-//         campaignContract = MediTrustCampaign(campaignAddr);
-//         dao = MediTrustDAO(daoAddr);
-//     }
-
-//     function donate(uint256 campaignId) external payable nonReentrant {
-//         require(msg.value > 0, "Zero donation");
-//         campaignBalance[campaignId] += msg.value;
-//         emit DonationReceived(campaignId, msg.sender, msg.value);
-//     }
-
-//     function submitClaim(
-//         uint256 campaignId,
-//         uint256 amount,
-//         string calldata ipfsHash
-//     ) external {
-//         MediTrustCampaign.Campaign memory c = campaignContract.campaigns(campaignId);
-//         require(msg.sender == c.patient, "Not patient");
-//         require(c.status == MediTrustCampaign.CampaignStatus.Approved, "Campaign not approved");
-//         require(amount <= campaignBalance[campaignId], "Insufficient balance");
-
-//         claims[++claimCounter] = Claim({
-//             campaignId: campaignId,
-//             amount: amount,
-//             ipfsHash: ipfsHash,
-//             paid: false
-//         });
-
-//         emit ClaimSubmitted(claimCounter);
-//     }
-
-//     function executeClaim(uint256 claimId) external nonReentrant {
-//         Claim storage cl = claims[claimId];
-//         require(!cl.paid, "Already paid");
-//         require(dao.isApproved(claimId), "DAO approval required");
-
-//         MediTrustCampaign.Campaign memory c = campaignContract.campaigns(cl.campaignId);
-
-//         cl.paid = true;
-//         campaignBalance[cl.campaignId] -= cl.amount;
-
-//         payable(c.patient).transfer(cl.amount);
-//         emit ClaimPaid(claimId);
-//     }
-// }
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import "./MediTrustCampaign.sol";
 import "./MediTrustDAO.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";  
+// Reentrancy Guard ensures no re-call of executeMilestoneClaim() before state updates, disallowing drain attack
 
-contract MediTrustFunds {
+/**
+ * @title MediTrustFunds
+ * @notice Receives donations and releases funds for Milestone Claims
+ */
+contract MediTrustFunds is ReentrancyGuard
+{
+    // Retrieve campaign & DAO contract to use for modifier & functions
     MediTrustCampaign public campaignContract;
-    MediTrustDAO public daoContract;
+    MediTrustDAO public DAOContract;
     
-    mapping(uint256 => uint256) public campaignBalances;
-    mapping(uint256 => mapping(address => uint256)) public donations;
-    
-    event DonationReceived(uint256 indexed campaignId, address indexed donor, uint256 amount);
-    event FundsReleased(uint256 indexed campaignId, uint256 indexed claimId, address indexed patient, uint256 amount);
-    
-    constructor(address _campaignContract, address _daoContract) {
-        campaignContract = MediTrustCampaign(_campaignContract);
-        daoContract = MediTrustDAO(_daoContract);
+    // Mapping of campaign IDs to campaign balance
+    mapping(uint256 => uint256) public campaignBalance;
+    // Mapping of campaign IDs to mapping of donor addresses to donation amounts
+    mapping(uint256 => mapping(address => uint256)) public donation;
+
+    // Constructor that initializes the campaign & DAO contracts with the provided addresses
+    constructor(address campaignAddress, address DAOAddress) 
+    {
+        campaignContract = MediTrustCampaign(campaignAddress);
+        DAOContract = MediTrustDAO(DAOAddress);
     }
     
-    function donate(uint256 _campaignId) external payable {
-        require(msg.value > 0, "Donation must be > 0");
-        require(_campaignId < campaignContract.campaignCount(), "Invalid campaign");
-        
-        (,,,, , MediTrustCampaign.CampaignStatus status,) = campaignContract.getCampaign(_campaignId);
-        require(status == MediTrustCampaign.CampaignStatus.Approved, "Campaign not approved");
-        
-        campaignBalances[_campaignId] += msg.value;
-        donations[_campaignId][msg.sender] += msg.value;
-        campaignContract.updateRaisedAmount(_campaignId, msg.value);
-        
-        emit DonationReceived(_campaignId, msg.sender, msg.value);
-    }
+    // Events: donation, release
+    event DonationReceive(uint256 indexed campaignID, address indexed donor, uint256 amount);
+    event FundsRelease(uint256 indexed campaignID, uint256 indexed claimID, address indexed patient, uint256 amount);
     
-    function executeClaim(uint256 _claimId) external {
-        require(daoContract.isClaimApproved(_claimId), "Claim not approved by DAO");
-        require(_claimId < daoContract.claimCount(), "Invalid claim");
+    // * Donation Action * //
+    function donate(uint256 campaignID) external payable nonReentrant  // payable = function can receive Ether
+    {
+        // Error checking for donation amount, campaign activation, campaign ID
+        require(msg.value > 0, "Unable to donate, amount must be more than HTH 0");
+        require(campaignID < campaignContract.campaignCount(), "Unable to donate, invalid campaign ID");
+        require(campaignContract.isCampaignActive(campaignID), "Unable to donate, campaign inactive");
+
+        // Add donation amount to the 2 mappings     
+        campaignBalance[campaignID] += msg.value;
+        donation[campaignID][msg.sender] += msg.value;
+        campaignContract.setRaised(campaignID, msg.value); // update campaign with new raised amount
         
-        (uint256 campaignId, address patient, uint256 amount, , , , bool executed,) = 
-            daoContract.getClaimDetails(_claimId);
+        emit DonationReceive(campaignID, msg.sender, msg.value);
+    }
+
+    // * Release Action * //
+    function executeMilestoneClaim(uint256 claimID) external nonReentrant 
+    {
+        // Error checking for claim approval and claim ID
+        require(DAOContract.isMilestoneClaimApproved(claimID), "Unable to execute, milestone claim not approved by DAO");
+        require(claimID < DAOContract.claimCount(), "Unable to execute, invalid milestone claim");
         
+        // Error checking if claim is already executed and if campaign has enough funds
+        (uint256 campaignID, address patient, uint256 amount, , , , bool executed,) = DAOContract.getMilestoneClaimDetails(claimID);
         require(!executed, "Claim already executed");
-        require(campaignBalances[campaignId] >= amount, "Insufficient campaign funds");
+        require(campaignBalance[campaignID] >= amount, "Sorry, insufficient campaign funds");
         
-        campaignBalances[campaignId] -= amount;
-        daoContract.markClaimExecuted(_claimId);
+        // Subtract claim amount from campaign balance, set as executed (State changes before transfer)
+        campaignBalance[campaignID] -= amount;
+        DAOContract.setMilestoneClaimExecuted(claimID);
         
-        (bool success, ) = payable(patient).call{value: amount}("");
-        require(success, "Transfer failed");
+        // Transfer funds to patient (External call at the end + Re-entrant = secure)
+        (bool sent, ) = payable(patient).call{value: amount}("");
+        require(sent, "Error, fund transfer failed");
         
-        emit FundsReleased(campaignId, _claimId, patient, amount);
+        emit FundsRelease(campaignID, claimID, patient, amount);
     }
     
-    function getCampaignBalance(uint256 _campaignId) external view returns (uint256) {
-        return campaignBalances[_campaignId];
+    // * Gettters & Setters: Funds * //
+    function getCampaignBalance(uint256 campaignID) external view returns (uint256) 
+    {
+        return campaignBalance[campaignID];
     }
     
-    function getDonationAmount(uint256 _campaignId, address _donor) external view returns (uint256) {
-        return donations[_campaignId][_donor];
-    }
-    
-    receive() external payable {
-        revert("Use donate() function");
+    function getDonation(uint256 campaignID, address donor) external view returns (uint256) 
+    {
+        return donation[campaignID][donor]; // mapping is ID and donor address
     }
 }

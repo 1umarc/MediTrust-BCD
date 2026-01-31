@@ -1,180 +1,145 @@
-// pragma solidity ^0.8.20;
-
-// import "./MediTrustRoles.sol";
-
-// // NatSpec (Natural Specification) comments
-// // /**
-// //  * @title MediTrustCampaigns
-// //  * @notice Handles patient campaign creation and hospital verification
-// //  */
-// contract MediTrustCampaign {
-//     MediTrustRoles public roles;
-
-//     enum CampaignStatus { Pending, Approved, Rejected }
-
-//     struct Campaign {
-//         address patient;
-//         uint256 targetAmount;
-//         uint256 expiry;
-//         string ipfsHash; // campaign documents
-//         CampaignStatus status;
-//     }
-
-//     uint256 public campaignCounter;
-//     mapping(uint256 => Campaign) public campaigns;
-
-//     event CampaignSubmitted(uint256 campaignId, address patient);
-//     event CampaignVerified(uint256 campaignId, bool approved);
-
-//     constructor(address rolesAddress) {
-//         roles = MediTrustRoles(rolesAddress);
-//     }
-
-//     function submitCampaign(
-//         uint256 targetAmount,
-//         uint256 expiry,
-//         string calldata ipfsHash
-//     ) external {
-//         require(targetAmount > 0, "Invalid target");
-//         require(expiry > block.timestamp, "Invalid expiry");
-
-//         campaigns[++campaignCounter] = Campaign({
-//             patient: msg.sender,
-//             targetAmount: targetAmount,
-//             expiry: expiry,
-//             ipfsHash: ipfsHash,
-//             status: CampaignStatus.Pending
-//         });
-
-//         emit CampaignSubmitted(campaignCounter, msg.sender);
-//     }
-
-//     function verifyCampaign(uint256 campaignId, bool approve)
-//         external
-//         onlyRole(roles.HOSPITAL_REP_ROLE())
-//     {
-//         Campaign storage c = campaigns[campaignId];
-//         require(c.status == CampaignStatus.Pending, "Already processed");
-
-//         c.status = approve ? CampaignStatus.Approved : CampaignStatus.Rejected;
-//         emit CampaignVerified(campaignId, approve);
-//     }
-
-//     modifier onlyRole(bytes32 role) {
-//         require(roles.hasRole(role, msg.sender), "Unauthorized");
-//         _;
-//     }
-// }
-// contracts/MediTrustCampaign.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import "./MediTrustRoles.sol";
 
-contract MediTrustCampaign {
-    MediTrustRoles public rolesContract;
-    
-    enum CampaignStatus { Pending, Approved, Rejected, Completed }
-    
-    struct Campaign {
+/**
+ * @title MediTrustCampaign
+ * @notice Manages everything about medical campaigns
+ */
+contract MediTrustCampaign 
+{
+    // Retrieve role & funds contract to use for modifier
+    MediTrustRoles public roleContract;
+
+    // Enum for campaign statuses 
+    enum CampaignStatus 
+    { 
+        Pending, 
+        Approved, 
+        Rejected, 
+        Completed
+    }
+
+    // Struct for campaign (authorization data only, not presentation data, saves gas)
+    struct Campaign 
+    {
         address patient;
-        uint256 targetAmount;
-        uint256 raisedAmount;
-        uint256 expiry;
-        string ipfsHash;
+        uint256 target;         // target amount in wei (hardhat)
+        uint256 raised;         // raised amount, unsigned integer to exclude negative values
+        uint256 duration; 
+        string ipfsHash;        // hash to medical documents & presentation metadata stored on IPFS
         CampaignStatus status;
-        uint256 createdAt;
-    }
-    
+        uint256 startDate;      // start date to track campaign duration
+    }  
+
+    // Mapping of campaign IDs to campaigns
     mapping(uint256 => Campaign) public campaigns;
+
+    // Counter for campaign IDs
     uint256 public campaignCount;
-    
-    event CampaignCreated(uint256 indexed campaignId, address indexed patient, uint256 targetAmount, string ipfsHash);
-    event CampaignApproved(uint256 indexed campaignId);
-    event CampaignRejected(uint256 indexed campaignId, string reason);
-    event CampaignCompleted(uint256 indexed campaignId);
-    
-    constructor(address _rolesContract) {
-        rolesContract = MediTrustRoles(_rolesContract);
+
+    // Constructor that initializes the role contract with the provided address
+    constructor(address roleAddress) 
+    {
+        roleContract = MediTrustRoles(roleAddress);
     }
-    
-    function createCampaign(
-        uint256 _targetAmount,
-        uint256 _durationDays,
-        string memory _ipfsHash
-    ) external returns (uint256) {
-        require(_targetAmount > 0, "Invalid target amount");
-        require(_durationDays > 0 && _durationDays <= 365, "Invalid duration");
-        require(bytes(_ipfsHash).length > 0, "IPFS hash required");
+
+    // Events: campaign submission, approval, rejection, completion
+    event CampaignSubmit(uint256 indexed campaignID, address indexed patient, uint256 target, string ipfsHash);
+    event CampaignApprove(uint256 indexed campaignID);
+    event CampaignReject(uint256 indexed campaignID, string reason);
+    event CampaignComplete(uint256 indexed campaignID);
         
-        uint256 campaignId = campaignCount++;
+    // * Campaign Actions * //
+    function submitCampaign(uint256 target, uint256 duration, string memory ipfsHash) external returns (uint256) 
+    {
+        // Error checking for target amount, duration, and IPFS hash
+        require(target > 0, "Try again, invalid target amount");
+        require(duration > 0 && duration <= 365, "Try again, invalid duration");
+        require(bytes(ipfsHash).length > 0, "Try again, IPFS hash required");
         
-        campaigns[campaignId] = Campaign({
-            patient: msg.sender,
-            targetAmount: _targetAmount,
-            raisedAmount: 0,
-            expiry: block.timestamp + (_durationDays * 1 days),
-            ipfsHash: _ipfsHash,
-            status: CampaignStatus.Pending,
-            createdAt: block.timestamp
-        });
+        // Increment campaignCount
+        uint256 campaignID = campaignCount++;
         
-        emit CampaignCreated(campaignId, msg.sender, _targetAmount, _ipfsHash);
-        return campaignId;
+        // Add campaign details to mapping 
+        Campaign storage newCampaign = campaigns[campaignID];
+        newCampaign.patient = msg.sender;
+        newCampaign.target = target;
+        newCampaign.raised = 0;
+        newCampaign.duration = duration;
+        newCampaign.ipfsHash = ipfsHash;
+        newCampaign.status = CampaignStatus.Pending;
+        newCampaign.startDate = block.timestamp;
+
+        emit CampaignSubmit(campaignID, msg.sender, target, ipfsHash); // Trigger event
+        return campaignID;
     }
-    
-    function approveCampaign(uint256 _campaignId) external {
-        require(rolesContract.isHospitalRep(msg.sender), "Only hospital reps can approve");
-        Campaign storage campaign = campaigns[_campaignId];
-        require(campaign.status == CampaignStatus.Pending, "Campaign not pending");
-        require(block.timestamp < campaign.expiry, "Campaign expired");
+
+    function approveCampaign(uint256 campaignID) external 
+    {
+        require(roleContract.isHospitalRep(msg.sender), "Sorry, only hospital representatives can approve");
+        
+        // store permenantly in mapping
+        Campaign storage campaign = campaigns[campaignID];
+
+        require(campaign.status == CampaignStatus.Pending, "Unable to approve, campaign not pending");
+        require(block.timestamp <= campaign.startDate + (campaign.duration * 86400), "Unable to approve, campaign expired"); // 86400 = seconds in a day
         
         campaign.status = CampaignStatus.Approved;
-        emit CampaignApproved(_campaignId);
+        emit CampaignApprove(campaignID);
     }
     
-    function rejectCampaign(uint256 _campaignId, string memory _reason) external {
-        require(rolesContract.isHospitalRep(msg.sender), "Only hospital reps can reject");
-        Campaign storage campaign = campaigns[_campaignId];
-        require(campaign.status == CampaignStatus.Pending, "Campaign not pending");
+    function rejectCampaign(uint256 campaignID, string memory reason) external // memory = store temporarily
+    {
+        require(roleContract.isHospitalRep(msg.sender), "Sorry, only hospital representatives can reject");
+
+        Campaign storage campaign = campaigns[campaignID];
+
+        require(campaign.status == CampaignStatus.Pending, "Unable to approve, campaign not pending");
         
         campaign.status = CampaignStatus.Rejected;
-        emit CampaignRejected(_campaignId, _reason);
+        emit CampaignReject(campaignID, reason);
     }
     
-    function getCampaign(uint256 _campaignId) external view returns (
-        address patient,
-        uint256 targetAmount,
-        uint256 raisedAmount,
-        uint256 expiry,
-        string memory ipfsHash,
-        CampaignStatus status,
-        uint256 createdAt
-    ) {
-        Campaign memory campaign = campaigns[_campaignId];
-        return (
+    // * Getters & Setters: Campaign * //
+    function getCampaign(uint256 campaignID) external view returns (address patient, uint256 target, uint256 raised, uint256 duration, string memory ipfsHash, CampaignStatus status, uint256 startDate) 
+    {
+        Campaign memory campaign = campaigns[campaignID]; // temporarily read from mapping
+        return // return tuple
+        (
             campaign.patient,
-            campaign.targetAmount,
-            campaign.raisedAmount,
-            campaign.expiry,
+            campaign.target,
+            campaign.raised,
+            campaign.duration,
             campaign.ipfsHash,
             campaign.status,
-            campaign.createdAt
+            campaign.startDate
         );
     }
     
-    function updateRaisedAmount(uint256 _campaignId, uint256 _amount) external {
-        campaigns[_campaignId].raisedAmount += _amount;
+    // Update raised amount
+    function setRaised(uint256 campaignID, uint256 amount) external
+    {
+        campaigns[campaignID].raised += amount; 
         
-        if (campaigns[_campaignId].raisedAmount >= campaigns[_campaignId].targetAmount) {
-            campaigns[_campaignId].status = CampaignStatus.Completed;
-            emit CampaignCompleted(_campaignId);
+        if (campaigns[campaignID].raised >= campaigns[campaignID].target)  // check if target reached to complete
+        {
+            campaigns[campaignID].status = CampaignStatus.Completed;
+            emit CampaignComplete(campaignID);
         }
     }
     
-    function isActive(uint256 _campaignId) external view returns (bool) {
-        Campaign memory campaign = campaigns[_campaignId];
-        return campaign.status == CampaignStatus.Approved && 
-               block.timestamp < campaign.expiry;
+    // Retrive campaign and check if active
+    function isCampaignActive(uint256 campaignID) external view returns (bool) 
+    {
+        Campaign memory campaign = campaigns[campaignID];
+        return campaign.status == CampaignStatus.Approved && block.timestamp <= campaign.startDate + (campaign.duration * 86400); // again check if expired
+    }
+
+    // Retrive campaign and check if patient's campaign
+    function isPatient(uint256 campaignID) external view returns (bool) 
+    {
+        return msg.sender == campaigns[campaignID].patient;
     }
 }

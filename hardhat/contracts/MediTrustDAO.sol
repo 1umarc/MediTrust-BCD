@@ -1,236 +1,210 @@
-// pragma solidity ^0.8.20;
-
-// import "./MediTrustRoles.sol";
-
-// // /**
-// //  * @title MediTrustDAO
-// //  * @notice DAO governance for approving medical fund releases
-// //  */
-// contract MediTrustDAO {
-//     MediTrustRoles public roles;
-
-//     uint256 public constant QUORUM_PERCENT = 50;
-//     uint256 public constant APPROVAL_PERCENT = 60;
-
-//     struct ClaimVote {
-//         uint256 approvals;
-//         uint256 totalVotes;
-//         bool executed;
-//         mapping(address => bool) voted;
-//         mapping(address => bool) voteChoice;
-//     }
-
-//     mapping(uint256 => ClaimVote) public claimVotes;
-
-//     event Voted(uint256 claimId, address voter, bool approve);
-//     event ClaimApproved(uint256 claimId);
-
-//     constructor(address rolesAddress) {
-//         roles = MediTrustRoles(rolesAddress);
-//     }
-
-//     function vote(uint256 claimId, bool approve) external onlyRole(roles.DAO_MEMBER_ROLE()) {
-//         ClaimVote storage cv = claimVotes[claimId];
-
-//         if (cv.voted[msg.sender]) {
-//             if (cv.voteChoice[msg.sender] != approve) {
-//                 if (approve) cv.approvals++;
-//                 else cv.approvals--;
-//                 cv.voteChoice[msg.sender] = approve;
-//             }
-//         } else {
-//             cv.voted[msg.sender] = true;
-//             cv.voteChoice[msg.sender] = approve;
-//             cv.totalVotes++;
-//             if (approve) cv.approvals++;
-//         }
-
-//         emit Voted(claimId, msg.sender, approve);
-
-//         if (isApproved(claimId) && !cv.executed) {
-//             cv.executed = true;
-//             emit ClaimApproved(claimId);
-//         }
-//     }
-
-//     function isApproved(uint256 claimId) public view returns (bool) {
-//         ClaimVote storage cv = claimVotes[claimId];
-
-//         uint256 quorum = (roles.daoMemberCount() * QUORUM_PERCENT) / 100;
-//         if (cv.totalVotes < quorum || cv.totalVotes == 0) return false;
-
-//         return (cv.approvals * 100) / cv.totalVotes >= APPROVAL_PERCENT;
-//     }
-
-//     modifier onlyRole(bytes32 role) {
-//         require(roles.hasRole(role, msg.sender), "Unauthorized");
-//         _;
-//     }
-// }
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import "./MediTrustRoles.sol";
+import "./MediTrustCampaign.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol"; // for mulDiv, prevents integer overflow
+// use governor?
 
-contract MediTrustDAO {
-    MediTrustRoles public rolesContract;
-    
-    struct Claim {
-        uint256 campaignId;
+/**
+ * @title MediTrustDAO
+ * @notice Permissioned DAO governance for Milestone Claims of the MediTrust Campaign
+ */
+contract MediTrustDAO 
+{
+    // Retrieve role & campaign contract to use for modifier
+    MediTrustRoles public roleContract;
+    MediTrustCampaign public campaignContract;
+
+    struct MilestoneClaim 
+    {
+        // Information
+        uint256 campaignID;
         address patient;
         uint256 amount;
         string ipfsHash;
-        uint256 votesFor;
-        uint256 votesAgainst;
-        mapping(address => bool) hasVoted;
-        mapping(address => bool) voteChoice;
+        // DAO voting
+        uint256 yesCount;
+        uint256 noCount;
+        mapping(address => bool) voted;      // mapping of DAO Member's address to whether they have voted
+        mapping(address => bool) voteChoice; // mapping of DAO Member's address to their vote
         bool executed;
-        uint256 createdAt;
+        uint256 startDate;
     }
-    
-    mapping(uint256 => Claim) public claims;
+
+    // Mapping of Milestone Claim IDs to Milestone Claims
+    mapping(uint256 => MilestoneClaim) public claims;
+
+    // Counter for Milestone Claim IDs
     uint256 public claimCount;
     
-    uint256 public constant QUORUM_PERCENTAGE = 50;
-    uint256 public constant APPROVAL_THRESHOLD = 60;
+    // Quorum: minimum percentage of votes from DAO members  
+    // Approval: minimum percentage of YES votes from DAO members
+    uint256 public constant quorumPercentage = 50;
+    uint256 public constant approvalPercentage = 60;
     
-    event ClaimSubmitted(uint256 indexed claimId, uint256 indexed campaignId, address indexed patient, uint256 amount, string ipfsHash);
-    event VoteCast(uint256 indexed claimId, address indexed voter, bool support);
-    event VoteChanged(uint256 indexed claimId, address indexed voter, bool newSupport);
-    event ClaimApproved(uint256 indexed claimId);
-    event ClaimExecuted(uint256 indexed claimId, uint256 amount);
-    
-    constructor(address _rolesContract) {
-        rolesContract = MediTrustRoles(_rolesContract);
+    // Constructor that initializes the role contract with the provided address
+    constructor(address roleAddress, address campaignAddress) 
+    {
+        roleContract = MediTrustRoles(roleAddress);
+        campaignContract = MediTrustCampaign(campaignAddress);
     }
     
-    function submitClaim(
-        uint256 _campaignId,
-        uint256 _amount,
-        string memory _ipfsHash
-    ) external returns (uint256) {
-        require(_amount > 0, "Invalid amount");
-        require(bytes(_ipfsHash).length > 0, "IPFS hash required");
+    // Events: Milestone Claim submission, vote casting, vote change, approval, and execution
+    event MilestoneClaimSubmit(uint256 indexed claimID, uint256 indexed campaignID, address indexed patient, uint256 amount, string ipfsHash);
+    event VoteCast(uint256 indexed claimID, address indexed DAOMember, bool voteChoice);
+    event VoteChange(uint256 indexed claimID, address indexed DAOMember, bool voteChoice);
+    event MilestoneClaimExecute(uint256 indexed claimID, uint256 amount);
+
+    // * Milestone Claim Action * //
+    function submitMilestoneClaim(uint256 campaignID, uint256 amount, string memory ipfsHash) external returns (uint256) 
+    {
+        // Error checking for campaign ID, amount, and IPFS hash
+        require(amount > 0, "Try again, invalid target amount");
+        require(bytes(ipfsHash).length > 0, "Try again, IPFS hash required");
+        require(campaignContract.isPatient(campaignID), "Unable to submit, not patient of this campaign");
         
-        uint256 claimId = claimCount++;
-        Claim storage newClaim = claims[claimId];
+        // Increment milestoneClaimCount
+        uint256 claimID = claimCount++;
         
-        newClaim.campaignId = _campaignId;
+        // Add milestoneClaim details to mapping
+        MilestoneClaim storage newClaim = claims[claimID];
+        newClaim.campaignID = campaignID;
         newClaim.patient = msg.sender;
-        newClaim.amount = _amount;
-        newClaim.ipfsHash = _ipfsHash;
-        newClaim.votesFor = 0;
-        newClaim.votesAgainst = 0;
-        newClaim.executed = false;
-        newClaim.createdAt = block.timestamp;
+        newClaim.amount = amount;
+        newClaim.ipfsHash = ipfsHash;
+        newClaim.yesCount = 0;
+        newClaim.noCount = 0;
+        newClaim.startDate = block.timestamp;
         
-        emit ClaimSubmitted(claimId, _campaignId, msg.sender, _amount, _ipfsHash);
-        return claimId;
+        emit MilestoneClaimSubmit(claimID, campaignID, msg.sender, amount, ipfsHash);
+        return claimID;
     }
     
-    function vote(uint256 _claimId, bool _support) external {
-        require(rolesContract.isDAOMember(msg.sender), "Not a DAO member");
-        Claim storage claim = claims[_claimId];
-        require(!claim.executed, "Claim already executed");
-        require(_claimId < claimCount, "Invalid claim ID");
+    // * DAO Voting Action * //
+    function vote(uint256 claimID, bool newVote) external 
+    {
+        require(roleContract.isDAOMember(msg.sender), "Sorry, only DAO members can vote");
+
+        // Retrieve milestoneClaim details and conduct error checking
+        MilestoneClaim storage milestoneClaim = claims[claimID];
+        require(claimID < claimCount, "Unable to vote, invalid claim ID");
+        require(!milestoneClaim.executed, "Unable to vote, claim already executed");
         
-        bool hadVoted = claim.hasVoted[msg.sender];
-        bool previousVote = claim.voteChoice[msg.sender];
-        
-        if (hadVoted) {
-            // Change vote
-            if (previousVote != _support) {
-                if (previousVote) {
-                    claim.votesFor--;
-                } else {
-                    claim.votesAgainst--;
+        // Check if user has already voted   
+        if (milestoneClaim.voted[msg.sender]) 
+        {
+            // Check if user has changed their vote, if yes, proceed to:
+            if (milestoneClaim.voteChoice[msg.sender] != newVote) 
+            {
+                // Remove old vote
+                if (milestoneClaim.voteChoice[msg.sender]) 
+                {
+                    milestoneClaim.yesCount--;
+                } 
+                else 
+                {
+                    milestoneClaim.noCount--;
                 }
                 
-                if (_support) {
-                    claim.votesFor++;
-                } else {
-                    claim.votesAgainst++;
+                // Add new vote
+                if (newVote) 
+                {
+                    milestoneClaim.yesCount++;
+                } 
+                else 
+                {
+                    milestoneClaim.noCount++;
                 }
-                
-                claim.voteChoice[msg.sender] = _support;
-                emit VoteChanged(_claimId, msg.sender, _support);
+
+                // Update vote
+                milestoneClaim.voteChoice[msg.sender] = newVote;
+                emit VoteChange(claimID, msg.sender, newVote);
             }
-        } else {
-            // New vote
-            claim.hasVoted[msg.sender] = true;
-            claim.voteChoice[msg.sender] = _support;
-            
-            if (_support) {
-                claim.votesFor++;
-            } else {
-                claim.votesAgainst++;
+        } 
+        else 
+        {
+            // Set new vote
+            if (newVote) 
+            {
+                milestoneClaim.yesCount++;
+            } 
+            else 
+            {
+                milestoneClaim.noCount++;
             }
             
-            emit VoteCast(_claimId, msg.sender, _support);
+            // Set as voted, add to mapping
+            milestoneClaim.voted[msg.sender] = true;  
+            milestoneClaim.voteChoice[msg.sender] = newVote;
+            emit VoteCast(claimID, msg.sender, newVote);
         }
     }
     
-    function isClaimApproved(uint256 _claimId) public view returns (bool) {
-        Claim storage claim = claims[_claimId];
-        uint256 totalVotes = claim.votesFor + claim.votesAgainst;
+    // * Getters & Setters: Milestone Claims * //
+    function isMilestoneClaimApproved(uint256 claimID) public view returns (bool) 
+    {
+        // Retrieve milestoneClaim details to calculate approval
+        MilestoneClaim storage milestoneClaim = claims[claimID];
+        uint256 totalVotes = milestoneClaim.yesCount + milestoneClaim.noCount;
         
-        if (totalVotes == 0) return false;
+        // Error check if no votes OR no DAO members
+        if (totalVotes == 0)
+        {
+            return false;
+        }
+        uint256 totalDAOMembers = roleContract.getTotalDAOMembers();
+        require(totalDAOMembers > 0, "Unable to determine, no DAO members");
         
-        uint256 totalDAOMembers = rolesContract.getTotalDAOMembers();
-        require(totalDAOMembers > 0, "No DAO members");
+        // Check QUORUM: > 50% of DAO members voted
+        uint256 quorumAchieved = (totalVotes * 100) / totalDAOMembers;  // calculates (totalVotes * 100) / totalDAOMembers   
+        if (quorumAchieved < quorumPercentage)
+        {
+            return false; // no need to continue
+        }
         
-        // Check quorum: at least 50% of DAO members voted
-        uint256 quorumRequired = (totalDAOMembers * QUORUM_PERCENTAGE) / 100;
-        if (totalVotes < quorumRequired) return false;
-        
-        // Check approval: at least 60% voted in favor
-        uint256 approvalRate = (claim.votesFor * 100) / totalVotes;
-        
-        return approvalRate >= APPROVAL_THRESHOLD;
+        // Check APPROVAL: > 60% voted in favor             
+        uint256 approvalRate = Math.mulDiv(milestoneClaim.yesCount, 100, totalVotes); // calculates (yesCount * 100) / totalVotes
+        return approvalRate >= approvalPercentage;
     }
     
-    function getClaimDetails(uint256 _claimId) external view returns (
-        uint256 campaignId,
-        address patient,
-        uint256 amount,
-        string memory ipfsHash,
-        uint256 votesFor,
-        uint256 votesAgainst,
-        bool executed,
-        uint256 createdAt
-    ) {
-        Claim storage claim = claims[_claimId];
-        return (
-            claim.campaignId,
-            claim.patient,
-            claim.amount,
-            claim.ipfsHash,
-            claim.votesFor,
-            claim.votesAgainst,
-            claim.executed,
-            claim.createdAt
+    function getMilestoneClaimDetails(uint256 claimID) external view returns (uint256 campaignID, address patient, uint256 amount, string memory ipfsHash, uint256 yesCount, uint256 noCount, bool executed, uint256 startDate) 
+    {
+        MilestoneClaim storage milestoneClaim = claims[claimID]; // temporarily read from mapping
+        return // return tuple
+        (
+            milestoneClaim.campaignID,
+            milestoneClaim.patient,
+            milestoneClaim.amount,
+            milestoneClaim.ipfsHash,
+            milestoneClaim.yesCount,
+            milestoneClaim.noCount,
+            milestoneClaim.executed,
+            milestoneClaim.startDate
         );
     }
     
-    function getClaimVotes(uint256 _claimId) external view returns (uint256 votesFor, uint256 votesAgainst) {
-        Claim storage claim = claims[_claimId];
-        return (claim.votesFor, claim.votesAgainst);
+    function getMilestoneClaimVotes(uint256 claimID) external view returns (uint256 yesCount, uint256 noCount) 
+    {
+        MilestoneClaim storage milestoneClaim = claims[claimID];
+        return (milestoneClaim.yesCount, milestoneClaim.noCount);
     }
     
-    function hasVoted(uint256 _claimId, address _voter) external view returns (bool) {
-        return claims[_claimId].hasVoted[_voter];
+    function getVoted(uint256 claimID, address DAOMember) external view returns (bool) 
+    {
+        return claims[claimID].voted[DAOMember];
     }
     
-    function getVoteChoice(uint256 _claimId, address _voter) external view returns (bool) {
-        require(claims[_claimId].hasVoted[_voter], "Has not voted");
-        return claims[_claimId].voteChoice[_voter];
+    function getVoteChoice(uint256 claimID, address DAOMember) external view returns (bool) 
+    {
+        require(claims[claimID].voted[DAOMember], "Unable to retrieve, DAO member has not voted");
+        return claims[claimID].voteChoice[DAOMember];
     }
     
-    function markClaimExecuted(uint256 _claimId) external {
-        require(!claims[_claimId].executed, "Already executed");
-        claims[_claimId].executed = true;
-        emit ClaimExecuted(_claimId, claims[_claimId].amount);
+    function setMilestoneClaimExecuted(uint256 claimID) external 
+    {
+        require(!claims[claimID].executed, "Unable to execute, claim already executed");
+        claims[claimID].executed = true;        // set milestoneClaim as executed
+        emit MilestoneClaimExecute(claimID, claims[claimID].amount);
     }
 }
-
-
