@@ -5,7 +5,7 @@ import campaignAbi from '@/abi/MediTrustCampaign.json'
 import { campaignContractAddress } from '@/utils/smartContractAddress'
 import { Pending, Approve, Reject} from '@/app/images'
 
-export function HospitalStats2() {
+export function HospitalStats() {
     // Fetch campaign statistics
     const { data: pendingCampaigns } = useReadContract({
         address: campaignContractAddress as Address,

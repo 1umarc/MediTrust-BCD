@@ -4,7 +4,7 @@ import React from 'react'
 import { useAccount } from 'wagmi'
 import { AdminPanel, ExclamationMark } from '@/app/images'
 
-export function AdminHeader1() {
+export function AdminHeader() {
   const { isConnected } = useAccount()
 
   return (

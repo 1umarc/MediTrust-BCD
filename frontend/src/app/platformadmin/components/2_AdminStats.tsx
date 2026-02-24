@@ -5,7 +5,7 @@ import rolesAbi from '@/abi/MediTrustRoles.json'
 import { rolesContractAddress } from '@/utils/smartContractAddress'
 import { Admin_HospitalReps, Admin_TotalAdmin, AdminGroupUsers } from '@/app/images'
 
-export function AdminStats2() {
+export function AdminStats() {
     // Fetch counts from contract
     const { data: daoMemberCount } = useReadContract({
         address: rolesContractAddress as Address,

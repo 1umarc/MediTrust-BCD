@@ -4,7 +4,7 @@ import React from 'react'
 import { useAccount } from 'wagmi'
 import { AdminGroupUsers, Admin_HospitalReps, CorrectMark } from '@/app/images'
 
-export function AdminPermission6() {
+export function AdminPermission() {
   const { isConnected } = useAccount()
 
   // Define data in a const array

@@ -1,9 +1,9 @@
 'use client'
 
 import React from 'react'
-import { CampaignsHeader } from './components/CampaignHeader1'
-import { CampaignStats } from './components/CampaignStats2'
-import { CampaignList } from './components/CampaignList4'
+import { CampaignsHeader } from './components/1_CampaignHeader'
+import { CampaignStats } from './components/2_CampaignStats'
+import { CampaignList } from './components/4_CampaignList'
 
 export default function CampaignsPage() {
   return (

@@ -65,18 +65,6 @@ export function CampaignFilters({ activeFilter, onFilterChange, campaignCounts }
      { id: FilterType; label: string; icon: string }[] = 
      [
         { 
-            id: 'all',
-            label: 'All Campaigns', 
-            icon: '📋' 
-        },
-
-        { 
-            id: 'pending', 
-            label: 'Pending', 
-            icon: '⏳' 
-        },
-
-        { 
             id: 'approved', 
             label: 'Active', 
             icon: '🔥' 
@@ -86,7 +74,13 @@ export function CampaignFilters({ activeFilter, onFilterChange, campaignCounts }
             id: 'completed', 
             label: 'Completed', 
             icon: '✅' 
-        }
+        },
+
+        { 
+            id: 'all',
+            label: 'All Campaigns', 
+            icon: '📋' 
+        },
     ]
 
     return (

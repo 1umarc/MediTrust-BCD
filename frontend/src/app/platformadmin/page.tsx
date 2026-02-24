@@ -2,12 +2,12 @@
 
 import React from 'react'
 import { useAccount } from 'wagmi'
-import { AdminHeader1 } from '../platformadmin/components/AdminHeader1'
-import { AdminStats2 } from './components/AdminStats2'
-import { AddDAOMember3 } from './components/AddDAOMember3'
-import { AddHospitalRep4 } from './components/AddHospitalRep4'
-import { RemoveMember5 } from './components/RemoveMember5'
-import { AdminPermission6 } from '@/app/platformadmin/components/AdminPermission6'
+import { AdminHeader } from './components/1_AdminHeader'
+import { AdminStats } from './components/2_AdminStats'
+import { AddDAOMember } from './components/3_AddDAOMember'
+import { AddHospitalRep } from './components/4_AddHospitalRep'
+import { RemoveMember } from './components/5_RemoveMember'
+import { AdminPermission } from '@/app/platformadmin/components/6_AdminPermission'
 
 export default function PlatformAdminPage() {
   const { isConnected } = useAccount()
@@ -19,10 +19,10 @@ export default function PlatformAdminPage() {
           <div className="container mx-auto max-w-7xl">
 
             {/* Admin Panel Header - Platform Administration */}
-              <AdminHeader1 />
+              <AdminHeader />
             
             {/* Admin Statistics */}
-              <AdminStats2 />
+              <AdminStats />
             
             {/* Management Sections - Add & Remove */}
             <div className="space-y-8">
@@ -33,8 +33,8 @@ export default function PlatformAdminPage() {
                   Add Members
                 </h1>
                 <div className="grid md:grid-cols-2 gap-6">
-                  <AddDAOMember3 />
-                  <AddHospitalRep4 />
+                  <AddDAOMember />
+                  <AddHospitalRep />
                 </div>
               </div>
 
@@ -45,13 +45,13 @@ export default function PlatformAdminPage() {
                   Remove Members
                 </h2>
                 <div className="grid md:grid-cols-2 gap-6">
-                  <RemoveMember5 type="dao" />
-                  <RemoveMember5 type="hospital" />
+                  <RemoveMember type="dao" />
+                  <RemoveMember type="hospital" />
                 </div>
               </div>
 
               <div>
-                <AdminPermission6/>
+                <AdminPermission/>
               </div>
             </div>
           </div>

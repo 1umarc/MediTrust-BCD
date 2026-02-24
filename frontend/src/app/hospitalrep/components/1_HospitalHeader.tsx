@@ -4,7 +4,7 @@ import React from 'react'
 import { useAccount } from 'wagmi'
 import { ExclamationMark, HospitalPanel, Approve } from '@/app/images'
 
-export function HospitalHeader1() {
+export function HospitalHeader() {
   const { address } = useAccount()
 
   return (

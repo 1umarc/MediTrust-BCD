@@ -13,7 +13,7 @@ interface RemoveMemberProps {
     type: MemberType
 }
 
-export function RemoveMember5({ type }: RemoveMemberProps) {
+export function RemoveMember({ type }: RemoveMemberProps) {
     const [address, setAddress] = useState('')
 
     const { data: hash, writeContract, isPending } = useWriteContract()

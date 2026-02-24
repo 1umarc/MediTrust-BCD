@@ -1,11 +1,11 @@
 'use client'
 
 import React from 'react'
-import { HospitalHeader1 } from './components/HospitalHeader1'
-import { HospitalStats2 } from './components/HospitalStats2'
-import { CampaignReviewList3 } from './components/CampaignReviewList3'
 import { useAccount } from 'wagmi'
-import CampaignGuideline4 from './components/CampaignGuideline4'
+import { HospitalHeader } from './components/1_HospitalHeader'
+import { HospitalStats } from './components/2_HospitalStats'
+import { CampaignReviewList } from './components/3_CampaignReviewList'
+import CampaignGuideline from './components/4_CampaignGuideline'
 
 export default function HospitalPage() {
   const { isConnected } = useAccount()
@@ -17,21 +17,21 @@ export default function HospitalPage() {
         <main className="flex-grow pt-24 pb-12 px-4">
           <div className="container mx-auto max-w-7xl">
             {/* Hospital Panel Header */}
-            <HospitalHeader1/>
+            <HospitalHeader/>
             
             {/* Hospital Statistics */}
             <div className="mb-12">
-              <HospitalStats2/>
+              <HospitalStats/>
             </div>
 
             {/* Campaign Reviews */}
             <div>
-              <CampaignReviewList3 />
+              <CampaignReviewList />
             </div>
 
             {/* Verification Guidelines */}
             <div>
-              <CampaignGuideline4 />
+              <CampaignGuideline />
             </div>
 
           </div>

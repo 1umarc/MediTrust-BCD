@@ -10,7 +10,7 @@ import { EmptyState } from '@/app/images'
 // Create allowed filter values
 type FilterType = 'pending' | 'approved' | 'rejected' | 'all'
 
-export function CampaignReviewList3() {
+export function CampaignReviewList() {
     const [activeFilter, setActiveFilter] = useState<FilterType>('pending')
 
     // Fetch campaign count

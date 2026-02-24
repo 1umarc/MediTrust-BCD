@@ -5,7 +5,7 @@ import { Address } from 'viem'
 import campaignAbi from '@/abi/MediTrustCampaign.json'
 import { campaignContractAddress } from '@/utils/smartContractAddress'
 import { CampaignCard } from './CampaignCard'
-import { CampaignFilters, FilterType } from './CampaignFilter3'
+import { CampaignFilters, FilterType } from './3_CampaignFilter'
 import { EmptyState } from '@/app/images'
 
 export function CampaignList() {
