@@ -2,7 +2,7 @@
 import React from 'react'
 import { MoneyIcon, FireIcon, AdminGroupUsers } from '@/app/images'
 
-export function ProfileStats4() {
+export function ProfileStats() {
 
   // Define data in an array
   const ProfileStats = [

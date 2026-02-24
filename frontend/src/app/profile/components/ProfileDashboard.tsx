@@ -1,11 +1,11 @@
 'use client'
 import React from 'react'
-import { ProfileHeader } from './ProfileHeader1'
-import { ProfileCard } from './ProfileCard2'
-import { ProfileStats4 } from './ProfileStats4'
-import { MyCampaign } from './MyCampaign5'
-import { ProfileNavigation } from './ProfileNavigation3'
-import { MoneyIcon, FireIcon, AdminGroupUsers  } from '@/app/images'
+import { ProfileHeader } from './1_ProfileHeader'
+import { ProfileCard } from './2_ProfileCard'
+import { ProfileNavigation } from './3_ProfileNavigation'
+import { ProfileStats } from './4_ProfileStats'
+import { MyCampaign } from './5_MyCampaign'
+
 
 export function ProfileDashboard() {
   return (
@@ -23,7 +23,7 @@ export function ProfileDashboard() {
         {/* Main Content */}
         <div className="lg:col-span-9 space-y-6">
           {/* Stats Grid */}
-          <ProfileStats4/>
+          <ProfileStats/>
 
           {/* My Campaigns Section */}
           <MyCampaign />

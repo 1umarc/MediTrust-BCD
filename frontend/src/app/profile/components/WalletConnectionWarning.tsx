@@ -6,12 +6,7 @@ import { ProfileDashboard } from './ProfileDashboard'
 
 export function WalletConnectionWarning() {
     const { isConnected } = useAccount()
-
-    // If wallet IS connected, show the profile dashboard
-    if (!isConnected) {
-        return <ProfileDashboard />
-    }
-
+    
     // If wallet is NOT connected, show the prompt 
     return (
         <div className="min-h-screen flex items-center justify-center px-4">
