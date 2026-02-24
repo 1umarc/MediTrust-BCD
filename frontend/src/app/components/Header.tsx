@@ -26,11 +26,15 @@ export function Header() {
         args: address ? [address] : undefined
     })
 
+
+
+// Frontend Code 
     return (
         <header className='fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-800'>
             <div className='container mx-auto px-6 py-4'>
                 <div className='flex justify-between items-center'>
-                    {/* Logo */}
+
+                    {/* Insert a MediTrust Logo by linking to the homepage itself */}
                     <Link href="/" className='flex items-center gap-3 group'>
                         <div className='w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105'>
                             <img src={MediTrustLogo.src} alt="MediTrust Logo" className="w-6 h-6" />
@@ -45,14 +49,23 @@ export function Header() {
                         <NavLink href="/">Home</NavLink>
                         <NavLink href="/campaigns">Campaigns</NavLink>
                         <NavLink href="/profile">Profile</NavLink>
-                        {isHospitalRep && <NavLink href="/hospital">Hospital Panel</NavLink>}
-                        {isDAOMember && <NavLink href="/dao">DAO Voting</NavLink>}
+                        <NavLink href="/hospitalrep">Hospital Panel</NavLink>
+                        <NavLink href="/platformadmin">Admin</NavLink>
+                        <NavLink href="/dao">DAO Voting</NavLink>
                         <Connect />
                     </nav>
 
-                    <div className='md:hidden'>
+                     {/* md:hidden -> Hide the 'navigation link' and 'connect' button on medium screen and bigger */}
+                    <nav className='md:hidden flex items-center gap-6'>
+                        <NavLink href="/">Home</NavLink>
+                        <NavLink href="/campaigns">Campaigns</NavLink>
+                        <NavLink href="/profile">Profile</NavLink>
+                    </nav>
+
+                    <div className='md:hidden'> 
                         <Connect />
                     </div>
+
                 </div>
             </div>
         </header>
