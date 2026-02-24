@@ -9,8 +9,11 @@ import "./MediTrustRoles.sol";
  */
 contract MediTrustCampaign 
 {
-    // Retrieve role & funds contract to use for modifier
+    // Retrieve role contract to use for modifier
     MediTrustRoles public roleContract;
+
+    // Get funds contract not via constructor
+    address public fundsAddress;      
 
     // Enum for campaign statuses 
     enum CampaignStatus 
@@ -95,7 +98,6 @@ contract MediTrustCampaign
         require(roleContract.isHospitalRep(msg.sender), "Sorry, only hospital representatives can reject");
 
         Campaign storage campaign = campaigns[campaignID];
-
         require(campaign.status == CampaignStatus.Pending, "Unable to approve, campaign not pending");
         
         campaign.status = CampaignStatus.Rejected;
@@ -105,7 +107,7 @@ contract MediTrustCampaign
     // * Getters & Setters: Campaign * //
     function getCampaign(uint256 campaignID) external view returns (address patient, uint256 target, uint256 raised, uint256 duration, string memory ipfsHash, CampaignStatus status, uint256 startDate) 
     {
-        Campaign memory campaign = campaigns[campaignID]; // temporarily read from mapping
+        Campaign storage campaign = campaigns[campaignID]; // temporarily read from mapping
         return // return tuple
         (
             campaign.patient,
@@ -117,11 +119,22 @@ contract MediTrustCampaign
             campaign.startDate
         );
     }
-    
-    // Update raised amount
+
+
+    // Update raised amount - ONLY MediTrustFunds Contract Address (SECURE)
+    function setFundsContract(address funds) external 
+    {
+        require(fundsAddress == address(0), "Unauthorized, funds contract already set"); // only can set contract once
+        fundsAddress = funds;
+    }
+    function getFundsContract() external view returns (address)
+    {
+        return fundsAddress;
+    }
     function setRaised(uint256 campaignID, uint256 amount) external
     {
-        campaigns[campaignID].raised += amount; 
+        require(msg.sender == fundsAddress, "Unauthorized, invalid contract address");
+        campaigns[campaignID].raised += amount; // raised = raised + amount
         
         if (campaigns[campaignID].raised >= campaigns[campaignID].target)  // check if target reached to complete
         {
@@ -133,7 +146,7 @@ contract MediTrustCampaign
     // Retrive campaign and check if active
     function isCampaignActive(uint256 campaignID) external view returns (bool) 
     {
-        Campaign memory campaign = campaigns[campaignID];
+        Campaign storage campaign = campaigns[campaignID];
         return campaign.status == CampaignStatus.Approved && block.timestamp <= campaign.startDate + (campaign.duration * 86400); // again check if expired
     }
 

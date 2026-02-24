@@ -36,7 +36,7 @@ contract MediTrustFunds is ReentrancyGuard
     function donate(uint256 campaignID) external payable nonReentrant  // payable = function can receive Ether
     {
         // Error checking for donation amount, campaign activation, campaign ID
-        require(msg.value > 0, "Unable to donate, amount must be more than HTH 0");
+        require(msg.value > 0, "Unable to donate, amount must be more than HETH 0");
         require(campaignID < campaignContract.campaignCount(), "Unable to donate, invalid campaign ID");
         require(campaignContract.isCampaignActive(campaignID), "Unable to donate, campaign inactive");
 
@@ -52,9 +52,9 @@ contract MediTrustFunds is ReentrancyGuard
     function executeMilestoneClaim(uint256 claimID) external nonReentrant 
     {
         // Error checking for claim approval and claim ID
-        require(DAOContract.isMilestoneClaimApproved(claimID), "Unable to execute, milestone claim not approved by DAO");
         require(claimID < DAOContract.claimCount(), "Unable to execute, invalid milestone claim");
-        
+        require(DAOContract.isMilestoneClaimApproved(claimID), "Unable to execute, milestone claim not approved by DAO");
+                
         // Error checking if claim is already executed and if campaign has enough funds
         (uint256 campaignID, address patient, uint256 amount, , , , bool executed,) = DAOContract.getMilestoneClaimDetails(claimID);
         require(!executed, "Claim already executed");
@@ -65,9 +65,8 @@ contract MediTrustFunds is ReentrancyGuard
         DAOContract.setMilestoneClaimExecuted(claimID);
         
         // Transfer funds to patient (External call at the end + Re-entrant = secure)
-        (bool sent, ) = payable(patient).call{value: amount}("");
-        require(sent, "Error, fund transfer failed");
-        
+        (bool sent, ) = payable(patient).call{value: amount}(""); // .call = sends the Value which is amount, "" = no data because it is a wallet transfer, not a contract call
+        require(sent, "Error, fund transfer failed"); // if false = reverts state
         emit FundsRelease(campaignID, claimID, patient, amount);
     }
     

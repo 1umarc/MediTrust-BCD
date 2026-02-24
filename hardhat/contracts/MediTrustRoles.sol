@@ -21,7 +21,7 @@ contract MediTrustRoles is Ownable
     constructor() Ownable(msg.sender) 
     {
 
-    } 
+    }
     
     // Events: role changes, address used as indexed parameter for easy filtering
     event hospitalRepAdd(address indexed rep);
@@ -51,7 +51,7 @@ contract MediTrustRoles is Ownable
         emit hospitalRepAdd(rep); // Emit add event
     }
     
-    function removeHospitalRep(address rep) external onlyOwner  // external = can be called by anyone
+    function removeHospitalRep(address rep) external onlyOwner  // external = only can be called by other contracts
     {
         require(hospitalRepresentatives[rep], "Unable to remove, not a hospital representative");
         hospitalRepresentatives[rep] = false;

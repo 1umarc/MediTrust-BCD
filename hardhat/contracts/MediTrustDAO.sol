@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import "./MediTrustRoles.sol";
 import "./MediTrustCampaign.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol"; // for mulDiv, prevents integer overflow
-// use governor?
 
 /**
  * @title MediTrustDAO
@@ -15,6 +14,9 @@ contract MediTrustDAO
     // Retrieve role & campaign contract to use for modifier
     MediTrustRoles public roleContract;
     MediTrustCampaign public campaignContract;
+    
+    // Get funds contract not via constructor
+    address public fundsAddress;     
 
     struct MilestoneClaim 
     {
@@ -60,9 +62,13 @@ contract MediTrustDAO
     function submitMilestoneClaim(uint256 campaignID, uint256 amount, string memory ipfsHash) external returns (uint256) 
     {
         // Error checking for campaign ID, amount, and IPFS hash
+        require(campaignContract.isCampaignActive(campaignID), "Try again, campaign not active");
         require(amount > 0, "Try again, invalid target amount");
         require(bytes(ipfsHash).length > 0, "Try again, IPFS hash required");
-        require(campaignContract.isPatient(campaignID), "Unable to submit, not patient of this campaign");
+
+        // Error checking for patient of campaign
+        (address campaignPatient,,,,,,) = campaignContract.getCampaign(campaignID);
+        require(msg.sender == campaignPatient, "Unable to submit, not patient of this campaign");
         
         // Increment milestoneClaimCount
         uint256 claimID = claimCount++;
@@ -87,8 +93,8 @@ contract MediTrustDAO
         require(roleContract.isDAOMember(msg.sender), "Sorry, only DAO members can vote");
 
         // Retrieve milestoneClaim details and conduct error checking
-        MilestoneClaim storage milestoneClaim = claims[claimID];
         require(claimID < claimCount, "Unable to vote, invalid claim ID");
+        MilestoneClaim storage milestoneClaim = claims[claimID];
         require(!milestoneClaim.executed, "Unable to vote, claim already executed");
         
         // Check if user has already voted   
@@ -157,7 +163,7 @@ contract MediTrustDAO
         require(totalDAOMembers > 0, "Unable to determine, no DAO members");
         
         // Check QUORUM: > 50% of DAO members voted
-        uint256 quorumAchieved = (totalVotes * 100) / totalDAOMembers;  // calculates (totalVotes * 100) / totalDAOMembers   
+        uint256 quorumAchieved = Math.mulDiv(totalVotes, 100, totalDAOMembers);  // calculates (totalVotes * 100) / totalDAOMembers   
         if (quorumAchieved < quorumPercentage)
         {
             return false; // no need to continue
@@ -201,8 +207,11 @@ contract MediTrustDAO
         return claims[claimID].voteChoice[DAOMember];
     }
     
+    // Execute Milestone Claim - ONLY MediTrustFunds Contract Address (SECURE)
     function setMilestoneClaimExecuted(uint256 claimID) external 
     {
+        require(msg.sender == campaignContract.getFundsContract(), "Unauthorized, invalid contract address");
+        require(isMilestoneClaimApproved(claimID), "Unable to execute, claim not approved");
         require(!claims[claimID].executed, "Unable to execute, claim already executed");
         claims[claimID].executed = true;        // set milestoneClaim as executed
         emit MilestoneClaimExecute(claimID, claims[claimID].amount);
