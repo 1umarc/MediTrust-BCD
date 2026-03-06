@@ -25,18 +25,18 @@ export function CampaignReviewList() {
     // Fetch all campaign statuses for filtering
     const allCampaignIds = Array.from({ length: count }, (_, i) => i)
     
-    const campaignStatuses = allCampaignIds.map(id => {
+    const campaignStatuses = allCampaignIds.map(campaignID => {
         const { data: campaign } = useReadContract({
             address: campaignContractAddress as Address,
             abi: campaignAbi.abi,
             functionName: 'getCampaign',
-            args: [id]
+            args: [campaignID]
         })
         return campaign ? (campaign as any)[5] : null // status at index 5
     })
 
     // Filter campaigns
-    const filteredCampaignIds = allCampaignIds.filter((id, index) => {
+    const filteredCampaignIds = allCampaignIds.filter((campaignID, index) => {
         const status = campaignStatuses[index]
         if (status === null) return false
         
@@ -123,8 +123,8 @@ export function CampaignReviewList() {
             {/* Campaign Grid */}
             {filteredCampaignIds.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredCampaignIds.map((campaignId) => (
-                        <CampaignReviewCard key={campaignId} campaignId={campaignId} />
+                    {filteredCampaignIds.map((campaignID) => (
+                        <CampaignReviewCard key={campaignID} campaignID={campaignID} />
                     ))}
                 </div>
             ) : (

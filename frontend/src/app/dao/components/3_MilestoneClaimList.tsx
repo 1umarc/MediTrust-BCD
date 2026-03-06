@@ -17,15 +17,15 @@ export function MilestoneClaimList() {
     const { data: milestoneCount } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
-        functionName: 'getTotalMilestoneCount'
+        functionName: 'getTotalMilestoneCount' //TODO: have not this function
     })
 
     const count = milestoneCount ? Number(milestoneCount) : 0
 
     // For now, mock data structure - replace with actual contract calls
     const milestoneClaims = Array.from({ length: count }, (_, i) => ({
-        campaignId: Math.floor(i / 3), // Example: 3 milestones per campaign
-        milestoneId: i % 3,
+        campaignID: Math.floor(i / 3), // Example: 3 milestones per campaign
+        claimID: i % 3,
         isApproved: i % 5 === 0 // Mock: every 5th is approved
     }))
 
@@ -95,8 +95,8 @@ export function MilestoneClaimList() {
                     {filteredClaims.map((claim, index) => (
                         <MilestoneClaimCard
                             key={index}
-                            campaignId={claim.campaignId}
-                            milestoneId={claim.milestoneId}
+                            campaignID={claim.campaignID}
+                            claimID={claim.claimID}
                         />
                     ))}
                 </div>

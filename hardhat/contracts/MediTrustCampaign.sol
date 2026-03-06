@@ -34,7 +34,8 @@ contract MediTrustCampaign
         string ipfsHash;        // hash to medical documents & presentation metadata stored on IPFS
         CampaignStatus status;
         uint256 startDate;      // start date to track campaign duration
-    }  
+        //XXX: ipfsHash, reason
+    }
 
     // Mapping of campaign IDs to campaigns
     mapping(uint256 => Campaign) public campaigns;
@@ -105,7 +106,7 @@ contract MediTrustCampaign
     }
     
     // * Getters & Setters: Campaign * //
-    function getCampaign(uint256 campaignID) external view returns (address patient, uint256 target, uint256 raised, uint256 duration, string memory ipfsHash, CampaignStatus status, uint256 startDate) 
+    function getCampaign(uint256 campaignID) external view returns (address patient, uint256 target, uint256 raised, uint256 duration, string memory ipfsHash, CampaignStatus status) 
     {
         Campaign storage campaign = campaigns[campaignID]; // temporarily read from mapping
         return // return tuple
@@ -115,8 +116,7 @@ contract MediTrustCampaign
             campaign.raised,
             campaign.duration,
             campaign.ipfsHash,
-            campaign.status,
-            campaign.startDate
+            campaign.status
         );
     }
 

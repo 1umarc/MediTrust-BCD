@@ -15,12 +15,12 @@ export function CampaignStats() {
     const count = campaignCount ? Number(campaignCount) : 0
 
     // Fetch all campaigns to calculate stats
-    const campaigns = Array.from({ length: count }, (_, i) => {
+    const campaigns = Array.from({ length: count }, (_, campaignID) => {
         const { data: campaign } = useReadContract({
             address: campaignContractAddress as Address,
             abi: campaignAbi.abi,
             functionName: 'getCampaign',
-            args: [i]
+            args: [campaignID]
         })
         return campaign
     }).filter(Boolean)

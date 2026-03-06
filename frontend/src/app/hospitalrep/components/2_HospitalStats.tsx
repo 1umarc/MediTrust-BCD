@@ -10,19 +10,19 @@ export function HospitalStats() {
     const { data: pendingCampaigns } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
-        functionName: 'getPendingCampaignsCount'
+        functionName: 'getPendingCampaignsCount' //TODO: have not this function
     })
 
     const { data: approvedCampaigns } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
-        functionName: 'getApprovedCampaignsCount'
+        functionName: 'getApprovedCampaignsCount' //TODO: have not this function
     })
 
     const { data: rejectedCampaigns } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
-        functionName: 'getRejectedCampaignsCount'
+        functionName: 'getRejectedCampaignsCount' //TODO: have not this function
     })
 
     {/* 

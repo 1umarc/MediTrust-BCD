@@ -67,7 +67,7 @@ contract MediTrustDAO
         require(bytes(ipfsHash).length > 0, "Try again, IPFS hash required");
 
         // Error checking for patient of campaign
-        (address campaignPatient,,,,,,) = campaignContract.getCampaign(campaignID);
+        (address campaignPatient,,,,,) = campaignContract.getCampaign(campaignID);
         require(msg.sender == campaignPatient, "Unable to submit, not patient of this campaign");
         
         // Increment milestoneClaimCount
@@ -174,12 +174,12 @@ contract MediTrustDAO
         return approvalRate >= approvalPercentage;
     }
     
-    function getMilestoneClaimDetails(uint256 claimID) external view returns (uint256 campaignID, address patient, uint256 amount, string memory ipfsHash, uint256 yesCount, uint256 noCount, bool executed, uint256 startDate) 
+    function getMilestoneClaimDetails(uint256 claimID) external view returns (uint256 campaignID, address patient, uint256 amount, string memory ipfsHash, uint256 yesCount, uint256 noCount, bool executed, uint256 startDate) //desc
     {
         MilestoneClaim storage milestoneClaim = claims[claimID]; // temporarily read from mapping
         return // return tuple
         (
-            milestoneClaim.campaignID,
+            milestoneClaim.campaignID,  //TODO: less return variables of "description"
             milestoneClaim.patient,
             milestoneClaim.amount,
             milestoneClaim.ipfsHash,

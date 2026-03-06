@@ -6,22 +6,22 @@ import campaignAbi from '@/abi/MediTrustCampaign.json'
 import { campaignContractAddress } from '@/utils/smartContractAddress'
 
 interface CampaignCardProps {
-    campaignId: number
+    campaignID: number
 }
 
-export function CampaignCard({ campaignId }: CampaignCardProps) {
+export function CampaignCard({ campaignID }: CampaignCardProps) {
     const { data: campaign } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
         functionName: 'getCampaign',
-        args: [campaignId]
+        args: [campaignID]
     })
 
     if (!campaign) return null
 
-    const [patient, targetAmount, raisedAmount, expiry, ipfsHash, status] = campaign as any[]
+    const [patient, target, raised, duration, ipfsHash, status] = campaign as any[]
     const statusLabels = ['Pending', 'Approved', 'Rejected', 'Completed']
-    const progress = (Number(raisedAmount) / Number(targetAmount)) * 100
+    const progress = (Number(raised) / Number(target)) * 100
 
     const statusColors = {
         0: 'bg-amber-500/20 border-amber-500/30 text-amber-300', // Pending
@@ -42,7 +42,7 @@ export function CampaignCard({ campaignId }: CampaignCardProps) {
                 {/* Header */}
                 <div className="flex justify-between items-start mb-4">
                     <div>
-                        <h3 className="text-xl font-bold text-white mb-1">Campaign #{campaignId}</h3>
+                        <h3 className="text-xl font-bold text-white mb-1">Campaign #{campaignID}</h3>
                         <p className="text-sm text-slate-400 font-mono">{patient.slice(0, 6)}...{patient.slice(-4)}</p>
                     </div>
                     <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${statusColors[status as keyof typeof statusColors]}`}>
@@ -70,17 +70,17 @@ export function CampaignCard({ campaignId }: CampaignCardProps) {
                 <div className="grid grid-cols-2 gap-4 mb-6">
                     <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
                         <div className="text-xs text-slate-500 mb-1 font-semibold">Target</div>
-                        <div className="text-lg font-bold text-white">{formatEther(targetAmount)} HETH</div>
+                        <div className="text-lg font-bold text-white">{formatEther(target)} HETH</div>
                     </div>
                     <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50">
                         <div className="text-xs text-slate-500 mb-1 font-semibold">Raised</div>
-                        <div className="text-lg font-bold text-cyan-400">{formatEther(raisedAmount)} HETH</div>
+                        <div className="text-lg font-bold text-cyan-400">{formatEther(raised)} HETH</div>
                     </div>
                 </div>
 
                 {/* View Details Button */}
                 <Link 
-                    href={`/campaigns/${campaignId}`}
+                    href={`/campaigns/${campaignID}`}
                     className="block w-full text-center px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl font-bold hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/20"
                 >
                     View Details →

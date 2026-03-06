@@ -10,13 +10,13 @@ export function AdminStats() {
     const { data: daoMemberCount } = useReadContract({
         address: rolesContractAddress as Address,
         abi: rolesAbi.abi,
-        functionName: 'getDAOMemberCount'
+        functionName: 'getTotalDAOMembers'
     })
 
     const { data: hospitalRepCount } = useReadContract({
         address: rolesContractAddress as Address,
         abi: rolesAbi.abi,
-        functionName: 'getHospitalRepCount'
+        functionName: 'getHospitalRepCount' //TODO: have not this function
     })
 
     const stats = [

@@ -7,12 +7,12 @@ import campaignAbi from '@/abi/MediTrustCampaign.json'
 import { campaignContractAddress } from '@/utils/smartContractAddress'
 
 interface CampaignReviewCardProps {
-    campaignId: number
+    campaignID: number
 }
 
-export function CampaignReviewCard({ campaignId }: CampaignReviewCardProps) {
+export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
     const [viewingDocuments, setViewingDocuments] = useState(false)
-    const [rejectionReason, setRejectionReason] = useState('')
+    const [reason, setRejectionReason] = useState('')
     const [showRejectForm, setShowRejectForm] = useState(false)
 
     // Fetch campaign data
@@ -20,7 +20,7 @@ export function CampaignReviewCard({ campaignId }: CampaignReviewCardProps) {
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
         functionName: 'getCampaign',
-        args: [campaignId]
+        args: [campaignID]
     })
 
     const { data: hash, writeContract, isPending } = useWriteContract()
@@ -28,12 +28,12 @@ export function CampaignReviewCard({ campaignId }: CampaignReviewCardProps) {
 
     if (!campaign) return null
 
-    const [patient, targetAmount, raisedAmount, expiry, ipfsHash, status] = campaign as any[]
+    const [patient, target, raised, duration, ipfsHash, status] = campaign as any[]
     
     // Only show pending campaigns
     if (status !== 0) return null
 
-    const expiryDate = new Date(Number(expiry) * 1000)
+    const expiryDate = new Date(Number(duration) * 1000)
     const daysUntilExpiry = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
 
     const handleApprove = () => {
@@ -41,12 +41,12 @@ export function CampaignReviewCard({ campaignId }: CampaignReviewCardProps) {
             address: campaignContractAddress as Address,
             abi: campaignAbi.abi,
             functionName: 'approveCampaign',
-            args: [campaignId]
+            args: [campaignID]
         })
     }
 
     const handleReject = () => {
-        if (!rejectionReason.trim()) {
+        if (!reason.trim()) {
             print('Please provide a rejection reason', 'error')
             return
         }
@@ -55,7 +55,7 @@ export function CampaignReviewCard({ campaignId }: CampaignReviewCardProps) {
             address: campaignContractAddress as Address,
             abi: campaignAbi.abi,
             functionName: 'rejectCampaign',
-            args: [campaignId, rejectionReason]
+            args: [campaignID, reason]
         })
     }
 
@@ -73,7 +73,7 @@ export function CampaignReviewCard({ campaignId }: CampaignReviewCardProps) {
                 {/* Header */}
                 <div className="flex justify-between items-start mb-4">
                     <div>
-                        <h3 className="text-xl font-bold text-white mb-1">Campaign #{campaignId}</h3>
+                        <h3 className="text-xl font-bold text-white mb-1">Campaign #{campaignID}</h3>
                         <p className="text-sm text-slate-400 font-mono">{patient.slice(0, 6)}...{patient.slice(-4)}</p>
                     </div>
                     <span className="px-3 py-1.5 bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded-full text-xs font-bold">
@@ -85,7 +85,7 @@ export function CampaignReviewCard({ campaignId }: CampaignReviewCardProps) {
                 <div className="grid grid-cols-2 gap-4 mb-6">
                     <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
                         <div className="text-xs text-slate-500 mb-1 font-semibold">Target Amount</div>
-                        <div className="text-2xl font-bold text-cyan-400">{formatEther(targetAmount)} ETH</div>
+                        <div className="text-2xl font-bold text-cyan-400">{formatEther(target)} ETH</div>
                     </div>
                     <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
                         <div className="text-xs text-slate-500 mb-1 font-semibold">Campaign Duration</div>
@@ -202,7 +202,7 @@ export function CampaignReviewCard({ campaignId }: CampaignReviewCardProps) {
                         </div>
                         
                         <textarea
-                            value={rejectionReason}
+                            value={reason}
                             onChange={(e) => setRejectionReason(e.target.value)}
                             rows={4}
                             className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 outline-none transition-all resize-none"
@@ -221,7 +221,7 @@ export function CampaignReviewCard({ campaignId }: CampaignReviewCardProps) {
                             </button>
                             <button
                                 onClick={handleReject}
-                                disabled={isPending || !rejectionReason.trim()}
+                                disabled={isPending || !reason.trim()}
                                 className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-bold hover:from-red-400 hover:to-pink-500 disabled:opacity-50 transition-all shadow-lg shadow-red-500/20"
                             >
                                 {isPending ? 'Rejecting...' : 'Confirm Rejection'}

@@ -129,7 +129,7 @@ export function CreataCampaignForm()
             ({
                 address: campaignContractAddress as Address,
                 abi: campaignAbi.abi,
-                functionName: 'CreateCampaign',
+                functionName: 'submitCampaign',
                 args: [parseEther(formData.TargetAmount), parseInt(formData.CampaignDuration), ipfsHash]
             })
 
