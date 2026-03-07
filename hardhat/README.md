@@ -30,6 +30,41 @@ npm run dev
 
 3. Launch the aplication via http://localhost:3000
 
+Database Integration
+
+1. Ensure that this extension is downloaded:
+SQLTools PostgreSQL/Cockroach Driver
+
+2. Add connection by clicking on the cylinder icon and fill in these information:
+Field	    Value
+Host	    127.0.0.1
+Port	    5432
+Database	meditrust_schema
+Username	postgres
+Password	testing123
+
+3. Test the connection by running this command:
+psql -h 127.0.0.1 -U postgres -d meditrust_schema
+
+The terminal should appear as shown:
+meditrust_schema=#
+
+4. Start the Hardhat by running these commands:
+cd hardhat
+npx hardhat node
+
+5. In a 2nd terminal, start the indexer with these commands:
+cd hardhat
+npx hardhat run scripts/indexer-viem.ts --network localhost
+
+6. Start the backend in 3rd terminal with these commands:
+cd backend
+npm run dev
+
+7. Start the frontend in 4th terminal with these commands:
+cd frontend
+npm run dev
+
 Group 9 Members:
 
 1. Luven Mark
