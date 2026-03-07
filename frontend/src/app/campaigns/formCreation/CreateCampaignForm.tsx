@@ -5,6 +5,7 @@ import { parseEther, Address } from 'viem'
 import { print } from '@/utils/toast'
 import campaignAbi from '@/abi/MediTrustCampaign.json'
 import { campaignContractAddress } from '@/utils/smartContractAddress'
+import { uploadToIPFS } from '@/utils/ipfsconfig'
 
 // Define the shape of the form data
 interface CampaignFormData 
@@ -52,42 +53,6 @@ export function CreataCampaignForm()
         }))
     }
 
-    // Upload files to IPFS via Pinata - Modify 
-    const uploadToIPFS = async (files: { [ key : string] : File | null }): 
-    Promise<string> => 
-    {
-        const MetaData = 
-        {
-            CreatorName: formData.CreatorName,
-            CampaignTitle: formData.CampaignTitle,
-            CampaignDescription: formData.CampaignDescription,
-            files: {}
-        }
-
-        return 'QmPlaceholderHashForCampaignMetadata'
-    }
-       
-
-    //     const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', 
-    //     {
-    //         method: 'POST',
-    //         headers: 
-    //         {
-    //             'Authorization': `Bearer ${process.env.NEXT_PUBLIC_PINATA_JWT}`
-    //         },
-    //         body: formData
-    //     })
-
-    //     const data = await response.json()
-    //     return data.IpfsHash
-    // }}
-
-    // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    //     if (e.target.files) {
-    //         setMedicalDocuments(Array.from(e.target.files))
-    //     }
-    // }
-
     const handleNextStep = () => 
     {
         if (currentStep === 1 )
@@ -118,12 +83,13 @@ export function CreataCampaignForm()
     const handleSubmit = async () => {
         try {
             setUploading(true)
-            const ipfsHash = await uploadToIPFS
-            ({
-                campaignImage: formData.CampaignImage,
-                medicalDiagnosis: formData.MedicalDiagnosis,
-                treatmentQuotation: formData.TreatmentQuotation
-            })
+            
+            const ipfsHash = await uploadToIPFS(formData.CampaignImage)
+            const medicalHash = await uploadToIPFS(formData.MedicalDiagnosis)
+            const quotationHash = await uploadToIPFS(formData.TreatmentQuotation)
+            console.log("Campaign Image CID:", ipfsHash)
+            console.log("Medical File CID:", medicalHash)
+            console.log("Quotation CID:", quotationHash)
             
             writeContract
             ({
