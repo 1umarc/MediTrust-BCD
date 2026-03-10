@@ -5,7 +5,8 @@ import { parseEther, Address } from 'viem'
 import { print } from '@/utils/toast'
 import campaignAbi from '@/abi/MediTrustCampaign.json'
 import { campaignContractAddress } from '@/utils/smartContractAddress'
-import { uploadToIPFS } from '@/utils/ipfsconfig'
+import { saveToIPFS, getFromIPFS } from '@/utils/ipfsconfig'
+import { saveToDB, getFromDB } from '@/utils/dbconfig'
 
 // Define the shape of the form data
 interface CampaignFormData 
@@ -84,12 +85,29 @@ export function CreataCampaignForm()
         try {
             setUploading(true)
             
-            const ipfsHash = await uploadToIPFS(formData.CampaignImage)
-            const medicalHash = await uploadToIPFS(formData.MedicalDiagnosis)
-            const quotationHash = await uploadToIPFS(formData.TreatmentQuotation)
+            const ipfsHash = await saveToIPFS(formData.CampaignImage)
+            const medicalHash = await saveToIPFS(formData.MedicalDiagnosis)
+            const quotationHash = await saveToIPFS(formData.TreatmentQuotation)
             console.log("Campaign Image CID:", ipfsHash)
             console.log("Medical File CID:", medicalHash)
             console.log("Quotation CID:", quotationHash)
+
+            const saved = await saveToDB("campaigndetails", {
+              campaignid: 1,
+  patient: formData.CreatorName,
+  duration: formData.CampaignDuration,
+  title: formData.CampaignTitle,
+  description: formData.CampaignDescription,
+  reason: formData.CampaignDescription,
+  termsaccepted: formData.TermsAccepted,
+  imagehash: ipfsHash
+});
+
+console.log("Saved record:", saved.record);
+
+// Fetch all campaigns
+const campaigns = await getFromDB("campaigndetails");
+console.log(campaigns);
             
             writeContract
             ({

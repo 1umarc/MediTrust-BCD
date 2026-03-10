@@ -1,5 +1,5 @@
-// for PRESENTATION DATA, only AUTHORIZATION data kept in contract
-export async function uploadToIPFS(file: File | null): Promise<string> 
+// for FILES
+export async function saveToIPFS(file: File | null): Promise<string> 
 {
     const formData = new FormData()
 
@@ -26,4 +26,9 @@ export async function uploadToIPFS(file: File | null): Promise<string>
         console.error("IPFS Upload Error:", error)
         throw error
     }
+}
+
+export function getFromIPFS(hash: string): string 
+{
+  return `https://gateway.pinata.cloud/ipfs/${hash}`;
 }

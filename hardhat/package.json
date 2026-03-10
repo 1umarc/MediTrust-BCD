@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "deploy": "npx hardhat ignition deploy ./ignition/modules/Deployment.ts --reset --network localhost",
-    "test": "REPORT_GAS=true npx hardhat test",
-    "compile": "npx hardhat compile"
+    "test": "npx hardhat test",
+    "compile": "npx hardhat compile",
+    "a": "npx hardhat node"
   },
   "repository": {
     "type": "git",
