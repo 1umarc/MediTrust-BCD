@@ -179,7 +179,7 @@ contract MediTrustDAO
         MilestoneClaim storage milestoneClaim = claims[claimID]; // temporarily read from mapping
         return // return tuple
         (
-            milestoneClaim.campaignID,  //TODO: less return variables of "description"
+            milestoneClaim.campaignID, 
             milestoneClaim.patient,
             milestoneClaim.amount,
             milestoneClaim.ipfsHash,
@@ -188,8 +188,8 @@ contract MediTrustDAO
             milestoneClaim.executed,
             milestoneClaim.startDate
         );
-    }
-    
+    } 
+
     function getMilestoneClaimVotes(uint256 claimID) external view returns (uint256 yesCount, uint256 noCount) 
     {
         MilestoneClaim storage milestoneClaim = claims[claimID];
@@ -215,5 +215,34 @@ contract MediTrustDAO
         require(!claims[claimID].executed, "Unable to execute, claim already executed");
         claims[claimID].executed = true;        // set milestoneClaim as executed
         emit MilestoneClaimExecute(claimID, claims[claimID].amount);
+    }
+
+    function getMilestoneClaimCount(uint256 MilestoneType) external view returns (uint256)
+    {
+        // type: 0 = Pending, 1 = Approved, 2 = Released, 3 = All
+
+        uint256 total = 0;
+
+        for (uint256 i = 0; i < claimCount; i++)
+        {
+            if (MilestoneType == 0 && !claims[i].executed)
+            {
+                total++;
+            }
+            else if (MilestoneType == 1 && isMilestoneClaimApproved(i))
+            {
+                total++;
+            }
+            else if (MilestoneType == 2 && claims[i].executed)
+            {
+                total += claims[i].amount;
+            }
+            else if (MilestoneType == 3)
+            {
+                total = claimCount;
+            }
+        }
+
+        return total;
     }
 }

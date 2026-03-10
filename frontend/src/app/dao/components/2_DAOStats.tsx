@@ -10,19 +10,22 @@ export function DAOStats() {
     const { data: pendingClaims } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
-        functionName: 'getPendingMilestoneCount' //TODO: have not this function
+        functionName: "getMilestoneClaimCount",
+        args: [0] // Pending
     })
 
     const { data: approvedClaims } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
-        functionName: 'getApprovedMilestoneCount' //TODO: have not this function
+        functionName: "getMilestoneClaimCount",
+        args: [1] // Approved
     })
 
     const { data: totalFundsReleased } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
-        functionName: 'getTotalMilestoneFundsReleased' //TODO: have not this function
+        functionName: "getMilestoneClaimCount",
+        args: [2] // Fund Released
     })
 
     // Define data in an array 

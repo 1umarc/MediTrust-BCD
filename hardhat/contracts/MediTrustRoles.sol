@@ -14,8 +14,9 @@ contract MediTrustRoles is Ownable
     mapping(address => bool) public hospitalRepresentatives;
     mapping(address => bool) public DAOMembers;
     
-    // Total count of DAO members
+    // Total count of DAO Members & Hospital Representatives
     uint256 public totalDAOMembers;
+    uint256 public totalHospitalRep;
 
     // Constructor sets the contract deployer as the Platform Administrator
     constructor() Ownable(msg.sender) 
@@ -48,6 +49,7 @@ contract MediTrustRoles is Ownable
        
         require(!hospitalRepresentatives[rep], "Unable to add, already a hospital representative");
         hospitalRepresentatives[rep] = true; // Add to address mapping
+        totalHospitalRep++;
         emit hospitalRepAdd(rep); // Emit add event
     }
     
@@ -55,6 +57,7 @@ contract MediTrustRoles is Ownable
     {
         require(hospitalRepresentatives[rep], "Unable to remove, not a hospital representative");
         hospitalRepresentatives[rep] = false;
+        totalHospitalRep--;
         emit hospitalRepRemove(rep);
     }
 
@@ -92,4 +95,10 @@ contract MediTrustRoles is Ownable
     {
         return totalDAOMembers;
     }
+
+    function getTotalHospitalRep() external view returns (uint256) 
+    {
+        return totalHospitalRep;
+    }
+
 }

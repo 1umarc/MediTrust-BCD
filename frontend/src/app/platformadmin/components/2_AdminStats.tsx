@@ -16,7 +16,7 @@ export function AdminStats() {
     const { data: hospitalRepCount } = useReadContract({
         address: rolesContractAddress as Address,
         abi: rolesAbi.abi,
-        functionName: 'getHospitalRepCount' //TODO: have not this function
+        functionName: 'getTotalHospitalRep' //TODO: have not this function
     })
 
     const stats = [

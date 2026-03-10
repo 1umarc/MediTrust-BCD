@@ -34,7 +34,7 @@ contract MediTrustCampaign
         string ipfsHash;        // hash to medical documents & presentation metadata stored on IPFS
         CampaignStatus status;
         uint256 startDate;      // start date to track campaign duration
-        //XXX: ipfsHash, reason
+        //XXX: ipfsHash 1 more
     }
 
     // Mapping of campaign IDs to campaigns
@@ -97,7 +97,7 @@ contract MediTrustCampaign
     function rejectCampaign(uint256 campaignID, string memory reason) external // memory = store temporarily
     {
         require(roleContract.isHospitalRep(msg.sender), "Sorry, only hospital representatives can reject");
-
+        // FIXME: reason??
         Campaign storage campaign = campaigns[campaignID];
         require(campaign.status == CampaignStatus.Pending, "Unable to approve, campaign not pending");
         
@@ -154,5 +154,20 @@ contract MediTrustCampaign
     function isPatient(uint256 campaignID) external view returns (bool) 
     {
         return msg.sender == campaigns[campaignID].patient;
+    }
+
+    function getCampaignCount(CampaignStatus status) external view returns (uint256) 
+    {
+        uint256 count = 0;
+
+        for (uint256 i = 0; i < campaignCount; i++) 
+        {
+            if (campaigns[i].status == status) 
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 }

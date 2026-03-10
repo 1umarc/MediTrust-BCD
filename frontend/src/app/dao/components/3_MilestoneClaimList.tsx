@@ -17,7 +17,8 @@ export function MilestoneClaimList() {
     const { data: milestoneCount } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
-        functionName: 'getTotalMilestoneCount' //TODO: have not this function
+        functionName: 'getMIlestoneClaimCount',
+        args: [3] 
     })
 
     const count = milestoneCount ? Number(milestoneCount) : 0
