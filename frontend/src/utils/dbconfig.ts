@@ -1,7 +1,7 @@
 // for PRESENTATION DATA
 export async function saveToDB(table: string, data: any) 
 {
-    const res = await fetch("http://localhost:5000/api/save", 
+    const res = await fetch("http://localhost:5000/api/db/save", 
     {   
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -12,7 +12,7 @@ export async function saveToDB(table: string, data: any)
 
 export async function getFromDB(table: string) 
 {
-    const res = await fetch("http://localhost:5000/api/get", 
+    const res = await fetch("http://localhost:5000/api/db/get", 
     {
         method: "POST",
         headers: { "Content-Type": "application/json" },

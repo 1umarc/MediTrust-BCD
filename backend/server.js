@@ -34,7 +34,7 @@ const pool = new Pool
 const schemaPath = path.join(__dirname, "schema.sql");
 const schema = fs.readFileSync(schemaPath, "utf8");
 
-// 3. Initialize Database - no need to do createdb -U postgres meditrust_schema & 
+// 3. Initialize Database - no need to do createdb -U postgres meditrust_schema 
 pool.connect()
     .then(() => {
         console.log("PostgreSQL connected");
@@ -53,7 +53,7 @@ pool.connect()
 
 
 // 4. For Frontend - Database API
-app.post("/api/save", async (req, res) => {
+app.post("/api/db/save", async (req, res) => {
     try 
     {
         const { table, data } = req.body; // table = 'campaigndetails', data = { field1: value1, ... }
@@ -75,7 +75,7 @@ app.post("/api/save", async (req, res) => {
     }
 });
 
-app.post("/api/get", async (req, res) => {
+app.post("/api/db/get", async (req, res) => {
     try 
     {
         const { table } = req.body;

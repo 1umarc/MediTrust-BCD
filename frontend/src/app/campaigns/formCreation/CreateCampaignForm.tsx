@@ -85,29 +85,30 @@ export function CreataCampaignForm()
         try {
             setUploading(true)
             
-            const ipfsHash = await saveToIPFS(formData.CampaignImage)
-            const medicalHash = await saveToIPFS(formData.MedicalDiagnosis)
+            const bannerHash = await saveToIPFS(formData.CampaignImage)
+            const diagnosisHash = await saveToIPFS(formData.MedicalDiagnosis)
             const quotationHash = await saveToIPFS(formData.TreatmentQuotation)
-            console.log("Campaign Image CID:", ipfsHash)
-            console.log("Medical File CID:", medicalHash)
+            console.log("Campaign Image CID:", bannerHash)
+            console.log("Medical File CID:", diagnosisHash)
             console.log("Quotation CID:", quotationHash)
 
             const saved = await saveToDB("campaigndetails", {
               campaignid: 1,
-  patient: formData.CreatorName,
-  duration: formData.CampaignDuration,
-  title: formData.CampaignTitle,
-  description: formData.CampaignDescription,
-  reason: formData.CampaignDescription,
-  termsaccepted: formData.TermsAccepted,
-  imagehash: ipfsHash
+              patient: formData.CreatorName,
+              duration: formData.CampaignDuration,
+              title: formData.CampaignTitle,
+              description: formData.CampaignDescription,
+              reason: formData.CampaignDescription,
+              termsaccepted: formData.TermsAccepted,
+              imagehash: bannerHash
 });
 
 console.log("Saved record:", saved.record);
 
 // Fetch all campaigns
-const campaigns = await getFromDB("campaigndetails");
-console.log(campaigns);
+// const campaigns = await getFromDB("campaigndetails");
+// bannerHash = campaigns[2].imagehash;
+// console.log(campaigns);
             
             writeContract
             ({

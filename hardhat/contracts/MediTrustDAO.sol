@@ -24,7 +24,7 @@ contract MediTrustDAO
         uint256 campaignID;
         address patient;
         uint256 amount;
-        string ipfsHash;
+        string ipfsHash; // TODO: rename to invoiceHash
         // DAO voting
         uint256 yesCount;
         uint256 noCount;
