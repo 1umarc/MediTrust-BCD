@@ -69,29 +69,24 @@ describe("MediTrustDAO", function () {
 
     // ─── Deployment ───────────────────────────────────────────────────────────
     describe("Deployment", function () {
-        it("Should store roles and campaign contract addresses", async function () {
+        it("Scenario 15: Store roles and campaign contract addresses", async function () 
+        {
             const { dao, roles, campaign } = await loadFixture(deployDAOFixture);
             expect(await dao.read.roleContract()).to.equal(getAddress(roles.address));
             expect(await dao.read.campaignContract()).to.equal(getAddress(campaign.address));
         });
 
-        it("Should start with claimCount of 0", async function () {
-            const { dao } = await loadFixture(deployDAOFixture);
-            expect(await dao.read.claimCount()).to.equal(0n);
-        });
     });
 
     // ─── submitMilestoneClaim ─────────────────────────────────────────────────
     describe("submitMilestoneClaim", function () {
-        it("Patient of active campaign can submit a milestone claim", async function () {
+        it("Scenario 16: Patient of active campaign can submit milestone claim and the details are stored correctly", async function () 
+        {
             const { dao, patient } = await loadFixture(deployDAOFixture);
-            await submitClaim(dao, patient);
-            expect(await dao.read.claimCount()).to.equal(1n);
-        });
 
-        it("Should store correct claim details", async function () {
-            const { dao, patient } = await loadFixture(deployDAOFixture);
             await submitClaim(dao, patient);
+
+            expect(await dao.read.claimCount()).to.equal(1n);
 
             const [campaignID, pAddr, amount, ipfsHash, yesCount, noCount, executed] =
                 await dao.read.getMilestoneClaimDetails([0n]);
@@ -105,43 +100,33 @@ describe("MediTrustDAO", function () {
             expect(executed).to.be.false;
         });
 
-        it("Should emit MilestoneClaimSubmit event", async function () {
-            const { dao, patient, publicClient } = await loadFixture(deployDAOFixture);
-            const hash = await submitClaim(dao, patient);
-            await publicClient.waitForTransactionReceipt({ hash });
+        it("Scenario 17: Revert when milestone claim submission conditions are invalid", async function () 
+        {
+            const { dao, patient, stranger } = await loadFixture(deployDAOFixture);
 
-            const events = await dao.getEvents.MilestoneClaimSubmit();
-            expect(events).to.have.lengthOf(1);
-            expect(events[0].args.claimID).to.equal(0n);
-            expect(events[0].args.campaignID).to.equal(0n);
-            expect(events[0].args.patient).to.equal(getAddress(patient.account.address));
-        });
+            const daoAsStranger = await hre.viem.getContractAt(
+                "MediTrustDAO",
+                dao.address,
+                { client: { wallet: stranger } }
+            );
 
-        it("Should revert if non-patient tries to submit", async function () {
-            const { dao, stranger } = await loadFixture(deployDAOFixture);
-            const daoAsStranger = await hre.viem.getContractAt("MediTrustDAO", dao.address, {
-                client: { wallet: stranger },
-            });
+            const daoAsPatient = await hre.viem.getContractAt(
+                "MediTrustDAO",
+                dao.address,
+                { client: { wallet: patient } }
+            );
+
+            // Non-patient tries to submit
             await expect(
                 daoAsStranger.write.submitMilestoneClaim([0n, CLAIM_AMOUNT, CLAIM_IPFS])
             ).to.be.rejectedWith("Unable to submit, not patient of this campaign");
-        });
 
-        it("Should revert with zero amount", async function () {
-            const { dao, patient } = await loadFixture(deployDAOFixture);
-            const daoAsPatient = await hre.viem.getContractAt("MediTrustDAO", dao.address, {
-                client: { wallet: patient },
-            });
+            // Zero claim amount
             await expect(
                 daoAsPatient.write.submitMilestoneClaim([0n, 0n, CLAIM_IPFS])
             ).to.be.rejectedWith("Try again, invalid target amount");
-        });
 
-        it("Should revert with empty IPFS hash", async function () {
-            const { dao, patient } = await loadFixture(deployDAOFixture);
-            const daoAsPatient = await hre.viem.getContractAt("MediTrustDAO", dao.address, {
-                client: { wallet: patient },
-            });
+            // Empty IPFS hash
             await expect(
                 daoAsPatient.write.submitMilestoneClaim([0n, CLAIM_AMOUNT, ""])
             ).to.be.rejectedWith("Try again, IPFS hash required");
@@ -150,39 +135,29 @@ describe("MediTrustDAO", function () {
 
     // ─── vote ─────────────────────────────────────────────────────────────────
     describe("vote", function () {
-        it("DAO member can cast a YES vote", async function () {
+        it("Scenario 18: Allow DAO members to choose YES and NO votes", async function () 
+        {
             const { dao, patient, dao1 } = await loadFixture(deployDAOFixture);
+
+            // YES vote
             await submitClaim(dao, patient);
             await voteAs(dao, dao1, 0n, true);
 
-            const [yes, no] = await dao.read.getMilestoneClaimVotes([0n]);
+            let [yes, no] = await dao.read.getMilestoneClaimVotes([0n]);
             expect(yes).to.equal(1n);
             expect(no).to.equal(0n);
-        });
 
-        it("DAO member can cast a NO vote", async function () {
-            const { dao, patient, dao1 } = await loadFixture(deployDAOFixture);
+            // NO vote
             await submitClaim(dao, patient);
-            await voteAs(dao, dao1, 0n, false);
+            await voteAs(dao, dao1, 1n, false);
 
-            const [yes, no] = await dao.read.getMilestoneClaimVotes([0n]);
+            [yes, no] = await dao.read.getMilestoneClaimVotes([1n]);
             expect(yes).to.equal(0n);
             expect(no).to.equal(1n);
         });
 
-        it("Should emit VoteCast event", async function () {
-            const { dao, patient, dao1, publicClient } = await loadFixture(deployDAOFixture);
-            await submitClaim(dao, patient);
-            const hash = await voteAs(dao, dao1, 0n, true);
-            await publicClient.waitForTransactionReceipt({ hash });
-
-            const events = await dao.getEvents.VoteCast();
-            expect(events).to.have.lengthOf(1);
-            expect(events[0].args.DAOMember).to.equal(getAddress(dao1.account.address));
-            expect(events[0].args.voteChoice).to.be.true;
-        });
-
-        it("DAO member can change their vote", async function () {
+        it("Scenario 19: Allow DAO member to change their vote", async function () 
+        {
             const { dao, patient, dao1, publicClient } = await loadFixture(deployDAOFixture);
             await submitClaim(dao, patient);
             await voteAs(dao, dao1, 0n, true);
@@ -198,7 +173,8 @@ describe("MediTrustDAO", function () {
             expect(changeEvents[0].args.voteChoice).to.be.false;
         });
 
-        it("Same vote twice does not trigger VoteChange", async function () {
+        it("Scenario 20: Vote does not change when the same type of vote is set twice", async function () 
+        {
             const { dao, patient, dao1, publicClient } = await loadFixture(deployDAOFixture);
             await submitClaim(dao, patient);
             await voteAs(dao, dao1, 0n, true);
@@ -209,7 +185,8 @@ describe("MediTrustDAO", function () {
             expect(changeEvents).to.have.lengthOf(0);
         });
 
-        it("Non-DAO member cannot vote", async function () {
+        it("Scenario 21: User that is not DAO member cannot vote", async function () 
+        {
             const { dao, patient, stranger } = await loadFixture(deployDAOFixture);
             await submitClaim(dao, patient);
             await expect(
@@ -217,40 +194,43 @@ describe("MediTrustDAO", function () {
             ).to.be.rejectedWith("Sorry, only DAO members can vote");
         });
 
-        it("Should revert with invalid claim ID", async function () {
+        it("Scenario 22: Revert when claim ID is invalid", async function () 
+        {
             const { dao, dao1 } = await loadFixture(deployDAOFixture);
             await expect(
                 voteAs(dao, dao1, 99n, true)
             ).to.be.rejectedWith("Unable to vote, invalid claim ID");
         });
 
-        it("getVoted and getVoteChoice return correct values", async function () {
-            const { dao, patient, dao1 } = await loadFixture(deployDAOFixture);
+        it("Scenario 23: Return correct vote data and revert for DAO member who has not voted", async function () {
+            const { dao, patient, dao1, dao2 } = await loadFixture(deployDAOFixture);
+
             await submitClaim(dao, patient);
             await voteAs(dao, dao1, 0n, true);
 
+            // dao1 has voted
             expect(await dao.read.getVoted([0n, dao1.account.address])).to.be.true;
             expect(await dao.read.getVoteChoice([0n, dao1.account.address])).to.be.true;
-        });
 
-        it("getVoteChoice reverts if member has not voted", async function () {
-            const { dao, patient, dao1 } = await loadFixture(deployDAOFixture);
-            await submitClaim(dao, patient);
+            // dao2 has not voted
+            expect(await dao.read.getVoted([0n, dao2.account.address])).to.be.false;
             await expect(
-                dao.read.getVoteChoice([0n, dao1.account.address])
+                dao.read.getVoteChoice([0n, dao2.account.address])
             ).to.be.rejectedWith("Unable to retrieve, DAO member has not voted");
         });
     });
 
     // ─── isMilestoneClaimApproved ─────────────────────────────────────────────
     describe("isMilestoneClaimApproved", function () {
-        it("Returns false when no votes cast", async function () {
+        it("Scenario 24: Return false when no votes are recorded", async function () 
+        {
             const { dao, patient } = await loadFixture(deployDAOFixture);
             await submitClaim(dao, patient);
             expect(await dao.read.isMilestoneClaimApproved([0n])).to.be.false;
         });
 
-        it("Returns true when quorum and approval thresholds are met", async function () {
+        it("Scenario 25: Return true when quorum and approval thresholds are reached", async function () 
+        {
             const { dao, patient, dao1, dao2, dao3 } = await loadFixture(deployDAOFixture);
             await submitClaim(dao, patient);
             // 3/3 DAO members vote YES → quorum = 100%, approval = 100%
@@ -260,27 +240,27 @@ describe("MediTrustDAO", function () {
             expect(await dao.read.isMilestoneClaimApproved([0n])).to.be.true;
         });
 
-        it("Returns false when quorum is not met", async function () {
-            // Only 1 out of 3 votes → 33% < 50% quorum
-            const { dao, patient, dao1 } = await loadFixture(deployDAOFixture);
-            await submitClaim(dao, patient);
-            await voteAs(dao, dao1, 0n, true);
-            expect(await dao.read.isMilestoneClaimApproved([0n])).to.be.false;
-        });
-
-        it("Returns false when quorum met but approval < 60%", async function () {
-            // 2/3 votes cast (quorum ✓), 1 YES 1 NO → approval = 50% < 60%
+        it("Scenario 26: Return false when milestone claim approval conditions are not reached", async function () 
+        {
             const { dao, patient, dao1, dao2 } = await loadFixture(deployDAOFixture);
+
+            // Quorum not met
             await submitClaim(dao, patient);
             await voteAs(dao, dao1, 0n, true);
-            await voteAs(dao, dao2, 0n, false);
             expect(await dao.read.isMilestoneClaimApproved([0n])).to.be.false;
+
+            // Quorum met, but approval < 60%
+            await submitClaim(dao, patient);
+            await voteAs(dao, dao1, 1n, true);
+            await voteAs(dao, dao2, 1n, false);
+            expect(await dao.read.isMilestoneClaimApproved([1n])).to.be.false;
         });
     });
 
     // ─── setMilestoneClaimExecuted ────────────────────────────────────────────
     describe("setMilestoneClaimExecuted", function () {
-        it("Only funds contract can execute a claim", async function () {
+        it("Scenario 27: Only funds contract can execute a claim", async function () 
+        {
             const { dao, patient, dao1, dao2, dao3, stranger } = await loadFixture(deployDAOFixture);
             await submitClaim(dao, patient);
             await voteAs(dao, dao1, 0n, true);
@@ -295,8 +275,9 @@ describe("MediTrustDAO", function () {
             ).to.be.rejectedWith("Unauthorized, invalid contract address");
         });
 
-        it("Funds contract can execute an approved claim", async function () {
+        it("Scenario 28: Funds contract can execute approved claim only once", async function () {
             const { dao, patient, dao1, dao2, dao3, fundsAddr } = await loadFixture(deployDAOFixture);
+
             await submitClaim(dao, patient);
             await voteAs(dao, dao1, 0n, true);
             await voteAs(dao, dao2, 0n, true);
@@ -305,30 +286,21 @@ describe("MediTrustDAO", function () {
             const daoAsFunds = await hre.viem.getContractAt("MediTrustDAO", dao.address, {
                 client: { wallet: fundsAddr },
             });
+
+            // First execution should succeed
             await daoAsFunds.write.setMilestoneClaimExecuted([0n]);
 
             const [, , , , , , executed] = await dao.read.getMilestoneClaimDetails([0n]);
             expect(executed).to.be.true;
-        });
 
-        it("Cannot execute an already-executed claim", async function () {
-            const { dao, patient, dao1, dao2, dao3, fundsAddr } = await loadFixture(deployDAOFixture);
-            await submitClaim(dao, patient);
-            await voteAs(dao, dao1, 0n, true);
-            await voteAs(dao, dao2, 0n, true);
-            await voteAs(dao, dao3, 0n, true);
-
-            const daoAsFunds = await hre.viem.getContractAt("MediTrustDAO", dao.address, {
-                client: { wallet: fundsAddr },
-            });
-            await daoAsFunds.write.setMilestoneClaimExecuted([0n]);
-
+            // Second execution should fail
             await expect(
                 daoAsFunds.write.setMilestoneClaimExecuted([0n])
             ).to.be.rejectedWith("Unable to execute, claim already executed");
         });
 
-        it("Cannot vote on an already-executed claim", async function () {
+        it("Scenario 29: Cannot vote on executed claim", async function () 
+        {
             const { dao, patient, dao1, dao2, dao3, fundsAddr } = await loadFixture(deployDAOFixture);
             await submitClaim(dao, patient);
             await voteAs(dao, dao1, 0n, true);

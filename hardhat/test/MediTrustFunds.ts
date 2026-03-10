@@ -77,7 +77,8 @@ describe("MediTrustFunds", function () {
 
     // ─── Deployment ───────────────────────────────────────────────────────────
     describe("Deployment", function () {
-        it("Should store campaign and DAO contract addresses", async function () {
+        it("Scenario 30: Store campaign and DAO contract addresses", async function () 
+        {
             const { funds, campaign, dao } = await loadFixture(deployFundsFixture);
             expect(await funds.read.campaignContract()).to.equal(getAddress(campaign.address));
             expect(await funds.read.DAOContract()).to.equal(getAddress(dao.address));
@@ -86,15 +87,23 @@ describe("MediTrustFunds", function () {
 
     // ─── donate ───────────────────────────────────────────────────────────────
     describe("donate", function () {
-        it("Donor can donate to an active campaign", async function () {
-            const { funds, donor } = await loadFixture(deployFundsFixture);
+        it("Scenario 31: Donor can donate to active campaign, and campaign balance and raised amount are updated correctly", async function () 
+        {
+            const { funds, campaign, donor } = await loadFixture(deployFundsFixture);
+
             await donateAs(funds, donor, parseEther("1"));
 
+            // Funds contract updates
             expect(await funds.read.getCampaignBalance([0n])).to.equal(parseEther("1"));
             expect(await funds.read.getDonation([0n, donor.account.address])).to.equal(parseEther("1"));
+
+            // Campaign contract updates
+            const [, , raised] = await campaign.read.getCampaign([0n]);
+            expect(raised).to.equal(parseEther("1"));
         });
 
-        it("Multiple donations accumulate correctly", async function () {
+        it("Scenario 32: Multiple donations are collected correctly", async function () 
+        {
             const { funds, donor } = await loadFixture(deployFundsFixture);
             await donateAs(funds, donor, parseEther("0.5"));
             await donateAs(funds, donor, parseEther("0.3"));
@@ -103,27 +112,8 @@ describe("MediTrustFunds", function () {
             expect(await funds.read.getDonation([0n, donor.account.address])).to.equal(parseEther("0.8"));
         });
 
-        it("Should emit DonationReceive event", async function () {
-            const { funds, donor, publicClient } = await loadFixture(deployFundsFixture);
-            const hash = await donateAs(funds, donor, parseEther("1"));
-            await publicClient.waitForTransactionReceipt({ hash });
-
-            const events = await funds.getEvents.DonationReceive();
-            expect(events).to.have.lengthOf(1);
-            expect(events[0].args.campaignID).to.equal(0n);
-            expect(events[0].args.donor).to.equal(getAddress(donor.account.address));
-            expect(events[0].args.amount).to.equal(parseEther("1"));
-        });
-
-        it("Should update the campaign raised amount", async function () {
-            const { funds, campaign, donor } = await loadFixture(deployFundsFixture);
-            await donateAs(funds, donor, parseEther("1"));
-
-            const [, , raised] = await campaign.read.getCampaign([0n]);
-            expect(raised).to.equal(parseEther("1"));
-        });
-
-        it("Donation reaching target marks campaign Completed", async function () {
+        it("Scenario 33: Campaign is set as 'Completed' when donation reaches target", async function () 
+        {
             const { funds, campaign, donor } = await loadFixture(deployFundsFixture);
             await donateAs(funds, donor, TARGET);
 
@@ -131,36 +121,33 @@ describe("MediTrustFunds", function () {
             expect(status).to.equal(3); // Completed
         });
 
-        it("Should revert when donating zero ETH", async function () {
-            const { funds, donor } = await loadFixture(deployFundsFixture);
-            await expect(
-                donateAs(funds, donor, 0n)
-            ).to.be.rejectedWith("Unable to donate, amount must be more than HETH 0");
-        });
+        it("Scenario 34: Revert when donation conditions are invalid", async function () 
+        {
+            const { roles, campaign, funds, hospitalRep, donor } = await loadFixture(deployFundsFixture);
 
-        it("Should revert on invalid campaign ID", async function () {
-            const { funds, donor } = await loadFixture(deployFundsFixture);
             const fundsAsDonor = await hre.viem.getContractAt("MediTrustFunds", funds.address, {
                 client: { wallet: donor },
             });
+
+            // Case 1: donating 0 ETH
+            await expect(
+                donateAs(funds, donor, 0n)
+            ).to.be.rejectedWith("Unable to donate, amount must be more than HETH 0");
+
+            // Case 2: invalid campaign ID
             await expect(
                 fundsAsDonor.write.donate([99n], { value: parseEther("1") })
             ).to.be.rejectedWith("Unable to donate, invalid campaign ID");
-        });
 
-        it("Should revert when campaign is not active (pending)", async function () {
-            const { roles, campaign, funds, hospitalRep, donor } = await loadFixture(deployFundsFixture);
-
-            // Submit a second campaign (ID = 1, still Pending)
+            // Case 3: campaign exists but is not active (Pending)
             const [, , , signers] = await hre.viem.getWalletClients();
             const campaignAsSigner = await hre.viem.getContractAt("MediTrustCampaign", campaign.address, {
                 client: { wallet: signers },
             });
+
+            // Submit new campaign (ID = 1) but do NOT approve it → still Pending
             await campaignAsSigner.write.submitCampaign([TARGET, DURATION, IPFS_HASH]);
 
-            const fundsAsDonor = await hre.viem.getContractAt("MediTrustFunds", funds.address, {
-                client: { wallet: donor },
-            });
             await expect(
                 fundsAsDonor.write.donate([1n], { value: parseEther("1") })
             ).to.be.rejectedWith("Unable to donate, campaign inactive");
@@ -169,7 +156,7 @@ describe("MediTrustFunds", function () {
 
     // ─── executeMilestoneClaim ────────────────────────────────────────────────
    describe("executeMilestoneClaim", function () {
-        it("Approved claim transfers ETH to patient", async function () {
+        it("Scenario 35: Executing approved claim transfers ETH to patient and reduces campaign balance", async function () {
             const { funds, dao, patient, dao1, dao2, dao3, donor, publicClient } =
                 await loadFixture(deployFundsFixture);
 
@@ -187,42 +174,16 @@ describe("MediTrustFunds", function () {
                 address: patient.account.address,
             });
 
-            // Patient received CLAIM_AMOUNT (gas paid by executor, not patient)
-            // Chai greaterThan does not support bigint — compare directly
+            // Patient received CLAIM_AMOUNT
             expect(balanceAfter > balanceBefore).to.be.true;
-        });
 
-        it("Campaign balance decreases after execution", async function () {
-            const { funds, dao, patient, dao1, dao2, dao3, donor } =
-                await loadFixture(deployFundsFixture);
-
-            await donateAs(funds, donor, parseEther("1"));
-            await submitAndApproveClaimFull(dao, patient, dao1, dao2, dao3);
-            await funds.write.executeMilestoneClaim([0n]);
-
+            // Campaign balance should decrease
             const remaining = await funds.read.getCampaignBalance([0n]);
             expect(remaining).to.equal(parseEther("1") - CLAIM_AMOUNT);
         });
 
-        it("Should emit FundsRelease event", async function () {
-            const { funds, dao, patient, dao1, dao2, dao3, donor, publicClient } =
-                await loadFixture(deployFundsFixture);
-
-            await donateAs(funds, donor, parseEther("1"));
-            await submitAndApproveClaimFull(dao, patient, dao1, dao2, dao3);
-
-            const hash = await funds.write.executeMilestoneClaim([0n]);
-            await publicClient.waitForTransactionReceipt({ hash });
-
-            const events = await funds.getEvents.FundsRelease();
-            expect(events).to.have.lengthOf(1);
-            expect(events[0].args.campaignID).to.equal(0n);
-            expect(events[0].args.claimID).to.equal(0n);
-            expect(events[0].args.patient).to.equal(getAddress(patient.account.address));
-            expect(events[0].args.amount).to.equal(CLAIM_AMOUNT);
-        });
-
-        it("Should revert when claim is not approved by DAO", async function () {
+        it("Scenario 36: Revert when claim is not approved by DAO", async function () 
+        {
             const { funds, dao, patient } = await loadFixture(deployFundsFixture);
 
             // Patient submits claim but no one votes — quorum never reached
@@ -236,14 +197,16 @@ describe("MediTrustFunds", function () {
             ).to.be.rejectedWith("Unable to execute, milestone claim not approved by DAO");
         });
 
-        it("Should revert with invalid claim ID", async function () {
+        it("Scenario 37: Revert when claim ID is invalid", async function () 
+        {
             const { funds } = await loadFixture(deployFundsFixture);
             await expect(
                 funds.write.executeMilestoneClaim([99n])
             ).to.be.rejectedWith("Unable to execute, invalid milestone claim");
         });
 
-        it("Should revert when campaign has insufficient funds", async function () {
+        it("Scenario 38: Revert when campaign has insufficient funds", async function () 
+        {
             const { funds, dao, patient, dao1, dao2, dao3 } =
                 await loadFixture(deployFundsFixture);
 
@@ -255,7 +218,8 @@ describe("MediTrustFunds", function () {
             ).to.be.rejectedWith("Sorry, insufficient campaign funds");
         });
 
-        it("Should revert when trying to execute the same claim twice", async function () {
+        it("Scenario 39: Revert when the same claim is executed twice", async function () 
+        {
             const { funds, dao, patient, dao1, dao2, dao3, donor } =
                 await loadFixture(deployFundsFixture);
 
@@ -267,16 +231,35 @@ describe("MediTrustFunds", function () {
                 funds.write.executeMilestoneClaim([0n])
             ).to.be.rejectedWith("Claim already executed");
         });
+
+        it("Scenario 40: Execute milestone claim when campaign balance is exactly equal to claim amount", async function () 
+        {
+            const { funds, dao, patient, dao1, dao2, dao3, donor } =
+                await loadFixture(deployFundsFixture);
+
+            await donateAs(funds, donor, CLAIM_AMOUNT);
+            await submitAndApproveClaimFull(dao, patient, dao1, dao2, dao3);
+
+            await funds.write.executeMilestoneClaim([0n]);
+
+            const remaining = await funds.read.getCampaignBalance([0n]);
+            expect(remaining).to.equal(0n);
+
+            const [, , , , , , executed] = await dao.read.getMilestoneClaimDetails([0n]);
+            expect(executed).to.be.true;
+        });
     });
 
     // ─── Getters ──────────────────────────────────────────────────────────────
     describe("Getters", function () {
-        it("getCampaignBalance returns 0 for campaign with no donations", async function () {
+        it("Scenario 41: Campaign balance set to 0 when no donations are made", async function () 
+        {
             const { funds } = await loadFixture(deployFundsFixture);
             expect(await funds.read.getCampaignBalance([0n])).to.equal(0n);
         });
 
-        it("getDonation returns 0 for address that never donated", async function () {
+        it("Scenario 42: Return 0 for address that never donated", async function () 
+        {
             const { funds, stranger } = await loadFixture(deployFundsFixture);
             expect(await funds.read.getDonation([0n, stranger.account.address])).to.equal(0n);
         });

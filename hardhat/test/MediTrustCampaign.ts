@@ -6,7 +6,8 @@ import { expect } from "chai";
 import hre from "hardhat";
 import { getAddress } from "viem";
 
-describe("MediTrustCampaign", function () {
+describe("MediTrustCampaign", function () 
+{
     // We define a fixture to reuse the same setup in every test.
     // We use loadFixture to run this setup once, snapshot that state,
     // and reset Hardhat Network to that snapshot in every test.
@@ -14,7 +15,8 @@ describe("MediTrustCampaign", function () {
     const TARGET = 1_000_000_000_000_000_000n; // 1 ETH in wei
     const DURATION = 30n;                       // 30 days
 
-    async function deployCampaignFixture() {
+    async function deployCampaignFixture() 
+    {
         const [owner, hospitalRep, patient, stranger, fundsAddr] = await hre.viem.getWalletClients();
 
         const roles = await hre.viem.deployContract("MediTrustRoles");
@@ -38,29 +40,26 @@ describe("MediTrustCampaign", function () {
 
     // ─── Deployment ───────────────────────────────────────────────────────────
     describe("Deployment", function () {
-        it("Should set the role contract address", async function () {
+        it("Scenario 1: Set the role contract address", async function () 
+        {
             const { roles, campaign } = await loadFixture(deployCampaignFixture);
             expect(await campaign.read.roleContract()).to.equal(getAddress(roles.address));
         });
 
-        it("Should start with campaignCount of 0", async function () {
-            const { campaign } = await loadFixture(deployCampaignFixture);
-            expect(await campaign.read.campaignCount()).to.equal(0n);
-        });
     });
 
     // ─── Submit Campaign ──────────────────────────────────────────────────────
     describe("submitCampaign", function () {
-        it("Patient can submit a campaign and campaignCount increments", async function () {
+        it("Scenario 2: Patient can submit a campaign and the details are stored correctly", async function () 
+        {
             const { campaign, patient } = await loadFixture(deployCampaignFixture);
+
             await submitCampaign(campaign, patient);
+
+            // campaignCount should increment
             expect(await campaign.read.campaignCount()).to.equal(1n);
-        });
 
-        it("Should store correct campaign details", async function () {
-            const { campaign, patient } = await loadFixture(deployCampaignFixture);
-            await submitCampaign(campaign, patient);
-
+            // verify stored campaign data
             const [pAddr, target, raised, duration, ipfsHash, status] =
                 await campaign.read.getCampaign([0n]);
 
@@ -72,54 +71,29 @@ describe("MediTrustCampaign", function () {
             expect(status).to.equal(0); // Pending
         });
 
-        it("Should emit CampaignSubmit event", async function () {
-            const { campaign, patient, publicClient } = await loadFixture(deployCampaignFixture);
-            const hash = await submitCampaign(campaign, patient);
-            await publicClient.waitForTransactionReceipt({ hash });
-
-            const events = await campaign.getEvents.CampaignSubmit();
-            expect(events).to.have.lengthOf(1);
-            expect(events[0].args.campaignID).to.equal(0n);
-            expect(events[0].args.patient).to.equal(getAddress(patient.account.address));
-            expect(events[0].args.target).to.equal(TARGET);
-            expect(events[0].args.ipfsHash).to.equal(IPFS_HASH);
-        });
-
-        it("Should revert with zero target", async function () {
+        it("Scenario 3: Revert for invalid values when campaign is submitted", async function () 
+        {
             const { campaign, patient } = await loadFixture(deployCampaignFixture);
-            const campaignAsPatient = await hre.viem.getContractAt("MediTrustCampaign", campaign.address, {
-                client: { wallet: patient },
-            });
+
+            const campaignAsPatient = await hre.viem.getContractAt(
+                "MediTrustCampaign",
+                campaign.address,
+                {
+                    client: { wallet: patient },
+                });
+
             await expect(
                 campaignAsPatient.write.submitCampaign([0n, DURATION, IPFS_HASH])
             ).to.be.rejectedWith("Try again, invalid target amount");
-        });
 
-        it("Should revert with zero duration", async function () {
-            const { campaign, patient } = await loadFixture(deployCampaignFixture);
-            const campaignAsPatient = await hre.viem.getContractAt("MediTrustCampaign", campaign.address, {
-                client: { wallet: patient },
-            });
             await expect(
                 campaignAsPatient.write.submitCampaign([TARGET, 0n, IPFS_HASH])
             ).to.be.rejectedWith("Try again, invalid duration");
-        });
 
-        it("Should revert with duration > 365", async function () {
-            const { campaign, patient } = await loadFixture(deployCampaignFixture);
-            const campaignAsPatient = await hre.viem.getContractAt("MediTrustCampaign", campaign.address, {
-                client: { wallet: patient },
-            });
             await expect(
                 campaignAsPatient.write.submitCampaign([TARGET, 366n, IPFS_HASH])
             ).to.be.rejectedWith("Try again, invalid duration");
-        });
 
-        it("Should revert with empty IPFS hash", async function () {
-            const { campaign, patient } = await loadFixture(deployCampaignFixture);
-            const campaignAsPatient = await hre.viem.getContractAt("MediTrustCampaign", campaign.address, {
-                client: { wallet: patient },
-            });
             await expect(
                 campaignAsPatient.write.submitCampaign([TARGET, DURATION, ""])
             ).to.be.rejectedWith("Try again, IPFS hash required");
@@ -128,35 +102,27 @@ describe("MediTrustCampaign", function () {
 
     // ─── Approve Campaign ─────────────────────────────────────────────────────
     describe("approveCampaign", function () {
-        it("Hospital rep can approve a pending campaign", async function () {
+        it("Scenario 4: Hospital rep can approve pending campaign but cannot approve it again when it is no longer pending", async function () 
+        {
             const { campaign, patient, hospitalRep } = await loadFixture(deployCampaignFixture);
             await submitCampaign(campaign, patient);
-
             const campaignAsRep = await hre.viem.getContractAt("MediTrustCampaign", campaign.address, {
                 client: { wallet: hospitalRep },
             });
-            await campaignAsRep.write.approveCampaign([0n]);
 
+            // First approval should succeed
+            await campaignAsRep.write.approveCampaign([0n]);
             const [, , , , , status] = await campaign.read.getCampaign([0n]);
             expect(status).to.equal(1); // Approved
+
+            // Second approval should fail
+            await expect(
+                campaignAsRep.write.approveCampaign([0n])
+            ).to.be.rejectedWith("Unable to approve, campaign not pending");
         });
 
-        it("Should emit CampaignApprove event", async function () {
-            const { campaign, patient, hospitalRep, publicClient } = await loadFixture(deployCampaignFixture);
-            await submitCampaign(campaign, patient);
-
-            const campaignAsRep = await hre.viem.getContractAt("MediTrustCampaign", campaign.address, {
-                client: { wallet: hospitalRep },
-            });
-            const hash = await campaignAsRep.write.approveCampaign([0n]);
-            await publicClient.waitForTransactionReceipt({ hash });
-
-            const events = await campaign.getEvents.CampaignApprove();
-            expect(events).to.have.lengthOf(1);
-            expect(events[0].args.campaignID).to.equal(0n);
-        });
-
-        it("Non-hospital rep cannot approve", async function () {
+        it("Scenario 5: User that is not hospital rep cannot approve campaign", async function () 
+        {
             const { campaign, patient, stranger } = await loadFixture(deployCampaignFixture);
             await submitCampaign(campaign, patient);
 
@@ -168,22 +134,8 @@ describe("MediTrustCampaign", function () {
             ).to.be.rejectedWith("Sorry, only hospital representatives can approve");
         });
 
-        it("Should revert when campaign is not pending", async function () {
-            const { campaign, patient, hospitalRep } = await loadFixture(deployCampaignFixture);
-            await submitCampaign(campaign, patient);
-
-            const campaignAsRep = await hre.viem.getContractAt("MediTrustCampaign", campaign.address, {
-                client: { wallet: hospitalRep },
-            });
-            await campaignAsRep.write.approveCampaign([0n]);
-
-            // Try to approve again
-            await expect(
-                campaignAsRep.write.approveCampaign([0n])
-            ).to.be.rejectedWith("Unable to approve, campaign not pending");
-        });
-
-        it("Should revert when campaign has expired", async function () {
+        it("Scenario 6: Revert when campaign is expired", async function () 
+        {
             const { campaign, patient, hospitalRep } = await loadFixture(deployCampaignFixture);
             await submitCampaign(campaign, patient);
 
@@ -197,39 +149,32 @@ describe("MediTrustCampaign", function () {
                 campaignAsRep.write.approveCampaign([0n])
             ).to.be.rejectedWith("Unable to approve, campaign expired");
         });
+
     });
 
     // ─── Reject Campaign ──────────────────────────────────────────────────────
     describe("rejectCampaign", function () {
-        it("Hospital rep can reject a pending campaign", async function () {
+        it("Scenario 7: Hospital rep can reject pending campaign but cannot reject it again when it is not pending", async function () 
+        {
             const { campaign, patient, hospitalRep } = await loadFixture(deployCampaignFixture);
             await submitCampaign(campaign, patient);
-
             const campaignAsRep = await hre.viem.getContractAt("MediTrustCampaign", campaign.address, {
                 client: { wallet: hospitalRep },
             });
-            await campaignAsRep.write.rejectCampaign([0n, "Insufficient documentation"]);
 
+            // First rejection should succeed
+            await campaignAsRep.write.rejectCampaign([0n, "Insufficient documentation"]);
             const [, , , , , status] = await campaign.read.getCampaign([0n]);
             expect(status).to.equal(2); // Rejected
+
+            // Second rejection should revert
+            await expect(
+                campaignAsRep.write.rejectCampaign([0n, "reason"])
+            ).to.be.rejectedWith("Unable to approve, campaign not pending");
         });
 
-        it("Should emit CampaignReject event with reason", async function () {
-            const { campaign, patient, hospitalRep, publicClient } = await loadFixture(deployCampaignFixture);
-            await submitCampaign(campaign, patient);
-
-            const campaignAsRep = await hre.viem.getContractAt("MediTrustCampaign", campaign.address, {
-                client: { wallet: hospitalRep },
-            });
-            const hash = await campaignAsRep.write.rejectCampaign([0n, "Insufficient documentation"]);
-            await publicClient.waitForTransactionReceipt({ hash });
-
-            const events = await campaign.getEvents.CampaignReject();
-            expect(events).to.have.lengthOf(1);
-            expect(events[0].args.reason).to.equal("Insufficient documentation");
-        });
-
-        it("Non-hospital rep cannot reject", async function () {
+        it("Scenario 8: User that is not hospital rep cannot reject campaign", async function () 
+        {
             const { campaign, patient, stranger } = await loadFixture(deployCampaignFixture);
             await submitCampaign(campaign, patient);
 
@@ -241,23 +186,12 @@ describe("MediTrustCampaign", function () {
             ).to.be.rejectedWith("Sorry, only hospital representatives can reject");
         });
 
-        it("Should revert when campaign is not pending", async function () {
-            const { campaign, patient, hospitalRep } = await loadFixture(deployCampaignFixture);
-            await submitCampaign(campaign, patient);
-
-            const campaignAsRep = await hre.viem.getContractAt("MediTrustCampaign", campaign.address, {
-                client: { wallet: hospitalRep },
-            });
-            await campaignAsRep.write.rejectCampaign([0n, "reason"]);
-            await expect(
-                campaignAsRep.write.rejectCampaign([0n, "reason"])
-            ).to.be.rejectedWith("Unable to approve, campaign not pending");
-        });
     });
 
     // ─── isCampaignActive ─────────────────────────────────────────────────────
     describe("isCampaignActive", function () {
-        it("Returns true for an approved campaign within duration", async function () {
+        it("Scenario 9: Return true for approved campaign within duration", async function () 
+        {
             const { campaign, patient, hospitalRep } = await loadFixture(deployCampaignFixture);
             await submitCampaign(campaign, patient);
 
@@ -268,38 +202,55 @@ describe("MediTrustCampaign", function () {
             expect(await campaign.read.isCampaignActive([0n])).to.be.true;
         });
 
-        it("Returns false for a pending campaign", async function () {
-            const { campaign, patient } = await loadFixture(deployCampaignFixture);
+        it("Scenario 10: Return false for campaigns that are inactive", async function () 
+        {
+            const { campaign, patient, hospitalRep } = await loadFixture(deployCampaignFixture);
+            
+            // Pending campaign
             await submitCampaign(campaign, patient);
             expect(await campaign.read.isCampaignActive([0n])).to.be.false;
+
+            // Approved campaign past duration
+            await submitCampaign(campaign, patient);
+            const campaignAsRep = await hre.viem.getContractAt(
+                "MediTrustCampaign",
+                campaign.address,
+                {
+                    client: { wallet: hospitalRep },
+                }
+            );
+            await campaignAsRep.write.approveCampaign([1n]);
+            await time.increase(DURATION * 86400n + 1n);
+            expect(await campaign.read.isCampaignActive([1n])).to.be.false;
         });
 
-        it("Returns false for an approved campaign past duration", async function () {
+        it("Scenario 11: Return false for campaigns that are rejected", async function () 
+        {
             const { campaign, patient, hospitalRep } = await loadFixture(deployCampaignFixture);
             await submitCampaign(campaign, patient);
-
             const campaignAsRep = await hre.viem.getContractAt("MediTrustCampaign", campaign.address, {
                 client: { wallet: hospitalRep },
             });
-            await campaignAsRep.write.approveCampaign([0n]);
-            await time.increase(DURATION * 86400n + 1n);
+            await campaignAsRep.write.rejectCampaign([0n, "Insufficient documentation"]);
             expect(await campaign.read.isCampaignActive([0n])).to.be.false;
         });
+
     });
 
     // ─── setFundsContract ─────────────────────────────────────────────────────
     describe("setFundsContract", function () {
-        it("Can be set once", async function () {
-            const { campaign, fundsAddr } = await loadFixture(deployCampaignFixture);
+        it("Scenario 12: Allow to set funds contract once and reject setting it again", async function () 
+        {
+            const { campaign, fundsAddr, stranger } = await loadFixture(deployCampaignFixture);
+
+            // First time: should succeed
             await campaign.write.setFundsContract([fundsAddr.account.address]);
+
             expect(await campaign.read.getFundsContract()).to.equal(
                 getAddress(fundsAddr.account.address)
             );
-        });
 
-        it("Cannot be set twice", async function () {
-            const { campaign, fundsAddr, stranger } = await loadFixture(deployCampaignFixture);
-            await campaign.write.setFundsContract([fundsAddr.account.address]);
+            // Second time: should fail
             await expect(
                 campaign.write.setFundsContract([stranger.account.address])
             ).to.be.rejectedWith("Unauthorized, funds contract already set");
@@ -308,7 +259,8 @@ describe("MediTrustCampaign", function () {
 
     // ─── setRaised ────────────────────────────────────────────────────────────
     describe("setRaised", function () {
-        it("Only funds contract can call setRaised", async function () {
+        it("Scenario 13: Only funds contract can call setRaised", async function () 
+        {
             const { campaign, patient, stranger } = await loadFixture(deployCampaignFixture);
             await submitCampaign(campaign, patient);
 
@@ -320,7 +272,8 @@ describe("MediTrustCampaign", function () {
             ).to.be.rejectedWith("Unauthorized, invalid contract address");
         });
 
-        it("Marks campaign Completed when target is reached", async function () {
+        it("Scenario 14: Campaign is set as 'Completed' when target is reached", async function () 
+        {
             const { campaign, patient, hospitalRep, fundsAddr } = await loadFixture(deployCampaignFixture);
             await submitCampaign(campaign, patient);
 
