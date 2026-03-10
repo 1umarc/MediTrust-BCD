@@ -44,7 +44,7 @@ Optional: Install the **SQLTools Postgres/Cockroach Driver Extension** in VS Cod
 
 ```
 Field	    Value
-Host	    10.101.123.13
+Host	    localhost
 Port	    5432
 Database	meditrust_schema
 Username	postgres
