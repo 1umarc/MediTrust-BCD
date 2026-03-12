@@ -1,4 +1,4 @@
-// IPFS is configured using Pinata
+// IPFS Imports - Pinata
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -11,7 +11,7 @@ app.use(express.json());
 
 const upload = multer();
 
-// PostgreSQL database is configured
+// Database Imports - PostgreSQL
 import { Pool } from "pg";
 import fs from "fs";
 import path from "path";
@@ -20,19 +20,20 @@ import { fileURLToPath } from "url";
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
-// PostgreSQL Database Setup
-
-// Create connection pool for database
+/**
+ * PostgreSQL Setup
+ */
+// 1. Database Connection
 const pool = new Pool
 ({
   connectionString: process.env.POSTGRES_URL
 });
 
-// Get Meditrust Schema   
+// 2. Get Schema - no need to do psql -U postgres -d meditrust_schema -f schema.sql   
 const schemapath = path.join(dirname, "schema.sql");
 const schema = fs.readFileSync(schemapath, "utf8");
 
-// Database is initialized
+// 3. Initialize Database - no need to do createdb -U postgres meditrust_schema 
 pool.connect()
     .then(() => 
     {
@@ -53,8 +54,7 @@ pool.connect()
     });
 
 
-// Database API For Frontend
-
+// 4. For Frontend - Database API
 // Save data from frontend into database table(s)
 app.post("/api/db/save", async (req, res) => {
     try 
@@ -94,8 +94,10 @@ app.post("/api/db/get", async (req, res) => {
 });
 
 
-// IPFS Upload Route
-
+/**
+ * IPFS Setup
+ */
+// 1. For Frontend - IPFS API
 // Handles file uploads from frontend and stores them on IPFS using Pinata
 app.post("/api/ipfs/upload", upload.single("file"), async (request, response) => 
 { // Multer makes the uploaded file available via req.file.buffer and req.file.originalname
