@@ -1,4 +1,4 @@
-// for FILES
+// FILES, decentralized storage
 export async function saveToIPFS(file: File | null): Promise<string> 
 {
     const formData = new FormData()

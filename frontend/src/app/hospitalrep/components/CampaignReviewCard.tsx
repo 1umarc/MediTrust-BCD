@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { Address, formatEther } from 'viem'
 import { print } from '@/utils/toast'
+import { useQueryClient } from '@tanstack/react-query'
 import campaignAbi from '@/abi/MediTrustCampaign.json'
 import { campaignContractAddress } from '@/utils/smartContractAddress'
 
@@ -43,6 +44,7 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
         args: [campaignID]
     })
 
+    const queryClient = useQueryClient()
     const { data: hash, writeContract, isPending } = useWriteContract()
     const { isSuccess } = useWaitForTransactionReceipt({ hash })
 
@@ -82,11 +84,14 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
         })
     }
 
-    if (isSuccess) {
-        print('Campaign status updated successfully!', 'success')
-        setShowRejectForm(false)
-        setRejectionReason('')
-    }
+    useEffect(() => {
+        if (isSuccess) {
+            queryClient.invalidateQueries()
+            print('Campaign status updated successfully!', 'success')
+            setShowRejectForm(false)
+            setRejectionReason('')
+        }
+    }, [isSuccess])
 
      return (
         <div className="group relative">

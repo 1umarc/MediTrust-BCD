@@ -3,16 +3,16 @@ import { useState, useEffect } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { Address, isAddress } from 'viem'
 import { print } from '@/utils/toast'
+import { useQueryClient } from '@tanstack/react-query'
 import rolesAbi from '@/abi/MediTrustRoles.json'
 import { rolesContractAddress } from '@/utils/smartContractAddress'
-import { useQueryClient } from '@tanstack/react-query'
 import { Admin_AddUsers } from '@/app/images'
 
 export function AddDAOMember() {
     const [address, setAddress] = useState('')
     const [name, setName] = useState('')
+    
     const queryClient = useQueryClient()
-
     const { data: hash, writeContract, isPending } = useWriteContract()
     const { isSuccess } = useWaitForTransactionReceipt({ hash })
 
@@ -33,7 +33,7 @@ export function AddDAOMember() {
     }
 
     useEffect(() => {
-            if (isSuccess) {
+        if (isSuccess) {
             queryClient.invalidateQueries()
             print('DAO Member added successfully!', 'success')
             setAddress('')

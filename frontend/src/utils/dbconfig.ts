@@ -1,4 +1,4 @@
-// for PRESENTATION DATA
+// PRESENTATION DATA, stored off-chain to minimize gas costs
 export async function saveToDB(table: string, data: any) 
 {
     const res = await fetch("http://localhost:5000/api/db/save", 
