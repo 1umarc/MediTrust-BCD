@@ -2,23 +2,44 @@
 import React from 'react'
 import Link from 'next/link'
 import { Connect } from './Connect'
-import { useAccount } from 'wagmi'
-import { useReadContract } from 'wagmi'
+import { useAccount ,useReadContract } from 'wagmi'
 import { Address } from 'viem'
 import rolesAbi from '@/abi/MediTrustRoles.json'
 import { rolesContractAddress } from '@/utils/smartContractAddress'
 import { MediTrustLogo } from '@/app/images'
 
-export function Header() {
-    const { address } = useAccount()
+// ---------------TEST MODE ---------------
+// const testmode = true 
 
+// const TEST_WALLETS = 
+// {
+//     patient:     '0x1111111111111111111111111111111111111111',  // 👤 Any user
+//     hospitalRep: '0x2222222222222222222222222222222222222222',  // 🏥 Hospital
+//     daoMember:   '0x3333333333333333333333333333333333333333',  // 🗳️ DAO
+//     admin:       '0x4444444444444444444444444444444444444444',  // 👨‍💼 Admin
+// }
+//-----------------------------------------
+
+export function Header() {
+    const { address , isConnected } = useAccount()
+
+//     // ---------------TEST MODE ---------------
+//     let isPatient = true
+//     let isHospitalRep = false
+//     let isDAOMember = false
+//     let isAdmin = true
+    //-----------------------------------------
+
+    // Real contract read (uncomment when ready to test with real wallet)
+    // Check if connected wallet is Hospital Representative
     const { data: isHospitalRep } = useReadContract({
-        address: rolesContractAddress as Address,
-        abi: rolesAbi.abi,
-        functionName: 'isHospitalRep',
-        args: address ? [address] : undefined
+        address: rolesContractAddress as Address,  // Contract address from .env
+        abi: rolesAbi.abi,                         // Contract interface (ABI)
+        functionName: 'isHospitalRep',             // Function to call in the contract
+        args: address ? [address] : undefined      // User's wallet address
     })
 
+     // Check if connected wallet is DAO Member
     const { data: isDAOMember } = useReadContract({
         address: rolesContractAddress as Address,
         abi: rolesAbi.abi,
@@ -26,10 +47,40 @@ export function Header() {
         args: address ? [address] : undefined
     })
 
+    // Check if connected wallet is Platform Admin (contract owner)
+    const { data: isPlatformAdmin } = useReadContract({
+        address: rolesContractAddress as Address,
+        abi: rolesAbi.abi,
+        functionName: 'isPlatformAdmin',
+        args: address ? [address] : undefined
+    })
+    
+    // TODO: TEMPORARY DISPLAYING FOR TESTING (DELETE WHEN DONE TESTING)
+    const getUserRole = () => {
+        if (!isConnected || !address) return null
+        
+        if (isPlatformAdmin) return { 
+            label: '👨‍💼 Admin', 
+            color: 'from-purple-500 to-pink-500' 
+        }
+        if (isHospitalRep) return { 
+            label: '🏥 Hospital Rep', 
+            color: 'from-cyan-500 to-blue-500' 
+        }
+        if (isDAOMember) return { 
+            label: '🗳️ DAO Member', 
+            color: 'from-emerald-500 to-teal-500' 
+        }
+        return { 
+            label: '👤 Patient', 
+            color: 'from-slate-500 to-slate-600' 
+        }
+    }
 
+    const userRole = getUserRole()
 
 // Frontend Code 
-    return (
+return ( 
         <header className='fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-800'>
             <div className='container mx-auto px-6 py-4'>
                 <div className='flex justify-between items-center'>
@@ -49,9 +100,30 @@ export function Header() {
                         <NavLink href="/">Home</NavLink>
                         <NavLink href="/campaigns">Campaigns</NavLink>
                         <NavLink href="/profile">Profile</NavLink>
-                        <NavLink href="/hospitalrep">Hospital Panel</NavLink>
-                        <NavLink href="/platformadmin">Admin</NavLink>
-                        <NavLink href="/dao">DAO Voting</NavLink>
+
+
+                        {/* Hospital Representative - Only show if wallet is hospital rep */}
+                        {!!isHospitalRep && (
+                            <NavLink href="/hospitalrep">Hospital Panel</NavLink>
+                        )}
+
+                        {/* DAO Member - Only show if wallet is DAO member */}
+                        {!!isDAOMember && (
+                            <NavLink href="/dao">DAO Voting</NavLink>
+                        )} 
+
+                        {/* Platform Admin - Only show if wallet is contract owner */}
+                        {!!isPlatformAdmin && (
+                                <NavLink href="/platformadmin">Admin</NavLink>
+                            )}
+                        
+                        {/* Role Badge - shows user's current role */}
+                        {userRole && (
+                            <div className={`px-4 py-2 bg-gradient-to-r ${userRole.color} rounded-lg text-white text-sm font-bold shadow-lg`}>
+                                {userRole.label}
+                            </div>
+                        )}
+
                         <Connect />
                     </nav>
 

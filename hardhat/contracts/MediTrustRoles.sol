@@ -91,6 +91,11 @@ contract MediTrustRoles is Ownable
         return DAOMembers[addr];
     }
     
+    function isPlatformAdmin(address addr) external view returns (bool)
+    {
+        return addr == owner(); // owner() from Ownable returns the boolean of the contract owner
+    }
+
     function getTotalDAOMembers() external view returns (uint256) 
     {
         return totalDAOMembers;
