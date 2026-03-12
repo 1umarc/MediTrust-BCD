@@ -1,14 +1,12 @@
 'use client'
 
 import React from 'react'
-import { useAccount } from 'wagmi'
 import { HospitalHeader } from './components/1_HospitalHeader'
 import { HospitalStats } from './components/2_HospitalStats'
 import { CampaignReviewList } from './components/3_CampaignReviewList'
 import CampaignGuideline from './components/4_CampaignGuideline'
 
 export default function HospitalPage() {
-  const { isConnected } = useAccount()
 
   return (
     <div className="relative min-h-screen">

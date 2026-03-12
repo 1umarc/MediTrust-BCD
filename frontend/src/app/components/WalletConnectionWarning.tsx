@@ -1,11 +1,9 @@
 'use client'
 import React from 'react'
-import { useAccount } from 'wagmi'
-import { SafeSecurity, Transparency, VerifyApprove } from '../../images'
-import { ProfileDashboard } from './ProfileDashboard'
+import { SafeSecurity, Transparency, VerifyApprove } from '../images'
 
 export function WalletConnectionWarning() {
-    const { isConnected } = useAccount()
+    
     
     // If wallet is NOT connected, show the prompt 
     return (

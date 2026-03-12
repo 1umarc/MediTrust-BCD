@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useReadContract } from 'wagmi'
 import { Address } from 'viem'
 import campaignAbi from '@/abi/MediTrustCampaign.json'
@@ -13,60 +13,60 @@ type FilterType = 'pending' | 'approved' | 'rejected' | 'all'
 export function CampaignReviewList() {
     const [activeFilter, setActiveFilter] = useState<FilterType>('pending')
 
-    //TODO: Mock data for testing without wallet connection
-    // ADD this instead:
-    const allCampaignIds = [0]
-    const filteredCampaignIds = [0]
-    const campaignCounts = { pending: 1, approved: 0, rejected: 0, all: 0 }
-
-        // TODO: Testing with mock data for now (no wallet connected yet)
+    // TODO: Testing with mock data for now (no wallet connected yet)
     /* Fetch campaign count
     // const { data: campaignCount } = useReadContract({
     //     address: campaignContractAddress as Address,
     //     abi: campaignAbi.abi,
     //     functionName: 'campaignCount'
-    //})  */
+    // })
 
+    const count = campaignCount ? Number(campaignCount) : 0
 
-    // const count = campaignCount ? Number(campaignCount) : 0
-
-    // // Fetch all campaign statuses for filtering
-    // const allCampaignIds = Array.from({ length: count }, (_, i) => i)
+    // Fetch all campaign statuses for filtering
+    const allCampaignIds = Array.from({ length: count }, (_, i) => i)
     
-    // const campaignStatuses = allCampaignIds.map(campaignID => {
-    //     const { data: campaign } = useReadContract({
-    //         address: campaignContractAddress as Address,
-    //         abi: campaignAbi.abi,
-    //         functionName: 'getCampaign',
-    //         args: [campaignID]
-    //     })
-    //     return campaign ? (campaign as any)[5] : null // status at index 5
-    // })
+    const campaignStatuses = allCampaignIds.map(id => {
+        const { data: campaign } = useReadContract({
+            address: campaignContractAddress as Address,
+            abi: campaignAbi.abi,
+            functionName: 'getCampaign',
+            args: [id]
+        })
+        return campaign ? (campaign as any)[5] : null // status at index 5
+    })
 
-    // // Filter campaigns
-    // const filteredCampaignIds = allCampaignIds.filter((campaignID, index) => {
-    //     const status = campaignStatuses[index]
-    //     if (status === null) return false
+    // Filter campaigns
+    const filteredCampaignIds = allCampaignIds.filter((id, index) => {
+        const status = campaignStatuses[index]
+        if (status === null) return false
         
-    //     switch (activeFilter) {
-    //         case 'pending':
-    //             return status === 0
-    //         case 'approved':
-    //             return status === 1
-    //         case 'rejected':
-    //             return status === 2
-    //         default:
-    //             return true
-    //     }
-    // })
+        switch (activeFilter) {
+            case 'pending':
+                return status === 0
+            case 'approved':
+                return status === 1
+            case 'rejected':
+                return status === 2
+            default:
+                return true
+        }
+    })
 
-    // // Calculate counts
-    // const campaignCounts = {
-    //     pending: campaignStatuses.filter(s => s === 0).length,
-    //     approved: campaignStatuses.filter(s => s === 1).length,
-    //     rejected: campaignStatuses.filter(s => s === 2).length,
-    //     all: allCampaignIds.length
-    // }
+    // Calculate counts
+    const campaignCounts = {
+        pending: campaignStatuses.filter(s => s === 0).length,
+        approved: campaignStatuses.filter(s => s === 1).length,
+        rejected: campaignStatuses.filter(s => s === 2).length,
+        all: allCampaignIds.length
+    }
+    */  
+
+    //TODO: Mock data for testing without wallet connection
+    // ADD this instead:
+    const allCampaignIds = [0]
+    const filteredCampaignIds = [0]
+    const campaignCounts = { pending: 1, approved: 0, rejected: 0, all: 0 }
 
     const filters: { id: FilterType; label: string; icon: string }[] = 
     [

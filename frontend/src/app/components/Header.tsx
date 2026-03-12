@@ -1,6 +1,8 @@
 'use client'
 import React from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { Connect } from './Connect'
 import { useAccount ,useReadContract } from 'wagmi'
 import { Address } from 'viem'
@@ -8,29 +10,10 @@ import rolesAbi from '@/abi/MediTrustRoles.json'
 import { rolesContractAddress } from '@/utils/smartContractAddress'
 import { MediTrustLogo } from '@/app/images'
 
-// ---------------TEST MODE ---------------
-// const testmode = true 
-
-// const TEST_WALLETS = 
-// {
-//     patient:     '0x1111111111111111111111111111111111111111',  // 👤 Any user
-//     hospitalRep: '0x2222222222222222222222222222222222222222',  // 🏥 Hospital
-//     daoMember:   '0x3333333333333333333333333333333333333333',  // 🗳️ DAO
-//     admin:       '0x4444444444444444444444444444444444444444',  // 👨‍💼 Admin
-// }
-//-----------------------------------------
-
 export function Header() {
+    const router = useRouter()
     const { address , isConnected } = useAccount()
 
-//     // ---------------TEST MODE ---------------
-//     let isPatient = true
-//     let isHospitalRep = false
-//     let isDAOMember = false
-//     let isAdmin = true
-    //-----------------------------------------
-
-    // Real contract read (uncomment when ready to test with real wallet)
     // Check if connected wallet is Hospital Representative
     const { data: isHospitalRep } = useReadContract({
         address: rolesContractAddress as Address,  // Contract address from .env
@@ -54,6 +37,14 @@ export function Header() {
         functionName: 'isPlatformAdmin',
         args: address ? [address] : undefined
     })
+
+    // NEW CHANGES : Refreshing website to update the webpage based on user's role. If user is not connected or not platform admin, redirect to homepage.
+    useEffect(() => {
+        // Wait for loading to finish before redirecting
+        if ((!isConnected || !isPlatformAdmin)) {
+            router.replace('/')  // Redirect unauthorized users to home
+        }
+    }, [isPlatformAdmin, isConnected])
     
     // TODO: TEMPORARY DISPLAYING FOR TESTING (DELETE WHEN DONE TESTING)
     const getUserRole = () => {

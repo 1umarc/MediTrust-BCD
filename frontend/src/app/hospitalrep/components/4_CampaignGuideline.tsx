@@ -4,7 +4,7 @@ import React from 'react'
 import { useAccount } from 'wagmi'
 import { CorrectGreen, RejectRed, Caution } from '@/app/images'
 
-export default function CampaignGuideline4() {
+export default function CampaignGuideline() {
   const { isConnected } = useAccount()
 
   // Define data in a const array

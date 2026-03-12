@@ -3,7 +3,7 @@
 import React from 'react'
 import { useAccount } from 'wagmi'
 import { ProfileDashboard } from './components/ProfileDashboard'
-import { WalletConnectionWarning } from './components/WalletConnectionWarning'
+import { WalletConnectionWarning } from '../components/WalletConnectionWarning'
 
 export default function ProfilePage() {
     
@@ -11,7 +11,7 @@ export default function ProfilePage() {
 
     {/* TODO: remember to change back this , if wallet is connected then only show profile dashboard else wallet connection warning*/}
     // If wallet IS connected, show the profile dashboard
-    if (!isConnected) {
+    if (isConnected) {
         return <ProfileDashboard />
     }
 
