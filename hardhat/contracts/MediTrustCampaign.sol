@@ -31,10 +31,10 @@ contract MediTrustCampaign
         uint256 target;         // target amount in wei (hardhat)
         uint256 raised;         // raised amount, unsigned integer to exclude negative values
         uint256 duration; 
-        string ipfsHash;        // hash to medical documents & presentation metadata stored on IPFS
+        string diagnosisHash;   // hash to medical diagnosis on IPFS
+        string quotationHash;   // hash to treatment quotation on IPFS
         CampaignStatus status;
         uint256 startDate;      // start date to track campaign duration
-        //XXX: ipfsHash 1 more
     }
 
     // Mapping of campaign IDs to campaigns
@@ -50,18 +50,19 @@ contract MediTrustCampaign
     }
 
     // Events: campaign submission, approval, rejection, completion
-    event CampaignSubmit(uint256 indexed campaignID, address indexed patient, uint256 target, string ipfsHash);
+    event CampaignSubmit(uint256 indexed campaignID, address indexed patient, uint256 target, string diagnosisHash, string quotationHash);
     event CampaignApprove(uint256 indexed campaignID);
-    event CampaignReject(uint256 indexed campaignID, string reason);
-    event CampaignComplete(uint256 indexed campaignID);
+    event CampaignReject(uint256 indexed campaignID);
+    event CampaignComplete(uint256 indexed campaignID); // XXX: not used
         
     // * Campaign Actions * //
-    function submitCampaign(uint256 target, uint256 duration, string memory ipfsHash) external returns (uint256) 
+    function submitCampaign(uint256 target, uint256 duration, string memory diagnosisHash, string memory quotationHash) external returns (uint256) 
     {
         // Error checking for target amount, duration, and IPFS hash
         require(target > 0, "Try again, invalid target amount");
         require(duration > 0 && duration <= 365, "Try again, invalid duration");
-        require(bytes(ipfsHash).length > 0, "Try again, IPFS hash required");
+        require(bytes(diagnosisHash).length > 0, "Try again, Medical Diagnosis hash required");
+        require(bytes(quotationHash).length > 0, "Try again, Treatment Quatation hash required");
         
         // Increment campaignCount
         uint256 campaignID = campaignCount++;
@@ -72,11 +73,12 @@ contract MediTrustCampaign
         newCampaign.target = target;
         newCampaign.raised = 0;
         newCampaign.duration = duration;
-        newCampaign.ipfsHash = ipfsHash;
+        newCampaign.diagnosisHash = diagnosisHash;
+        newCampaign.quotationHash = quotationHash;
         newCampaign.status = CampaignStatus.Pending;
         newCampaign.startDate = block.timestamp;
 
-        emit CampaignSubmit(campaignID, msg.sender, target, ipfsHash); // Trigger event
+        emit CampaignSubmit(campaignID, msg.sender, target, diagnosisHash, quotationHash); // Trigger event
         return campaignID;
     }
 
@@ -94,19 +96,19 @@ contract MediTrustCampaign
         emit CampaignApprove(campaignID);
     }
     
-    function rejectCampaign(uint256 campaignID, string memory reason) external // memory = store temporarily
+    function rejectCampaign(uint256 campaignID) external // memory = store temporarily
     {
-        require(roleContract.isHospitalRep(msg.sender), "Sorry, only hospital representatives can reject");
-        // FIXME: reason??
-        Campaign storage campaign = campaigns[campaignID];
-        require(campaign.status == CampaignStatus.Pending, "Unable to approve, campaign not pending");
-        
-        campaign.status = CampaignStatus.Rejected;
-        emit CampaignReject(campaignID, reason);
+    require(roleContract.isHospitalRep(msg.sender), "Sorry, only hospital representatives can reject");
+
+    Campaign storage campaign = campaigns[campaignID];
+    require(campaign.status == CampaignStatus.Pending, "Unable to reject, campaign not pending");
+
+    campaign.status = CampaignStatus.Rejected;
+    emit CampaignReject(campaignID);
     }
     
     // * Getters & Setters: Campaign * //
-    function getCampaign(uint256 campaignID) external view returns (address patient, uint256 target, uint256 raised, uint256 duration, string memory ipfsHash, CampaignStatus status) 
+    function getCampaign(uint256 campaignID) external view returns (address patient, uint256 target, uint256 raised, uint256 duration, string memory diagnosisHash, string memory quotationHash, CampaignStatus status) 
     {
         Campaign storage campaign = campaigns[campaignID]; // temporarily read from mapping
         return // return tuple
@@ -115,7 +117,8 @@ contract MediTrustCampaign
             campaign.target,
             campaign.raised,
             campaign.duration,
-            campaign.ipfsHash,
+            campaign.diagnosisHash,
+            campaign.quotationHash,
             campaign.status
         );
     }

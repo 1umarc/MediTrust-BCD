@@ -24,7 +24,7 @@ contract MediTrustDAO
         uint256 campaignID;
         address patient;
         uint256 amount;
-        string ipfsHash; // TODO: rename to invoiceHash
+        string invoiceHash;                 // hash to invoice on IPFS
         // DAO voting
         uint256 yesCount;
         uint256 noCount;
@@ -53,21 +53,21 @@ contract MediTrustDAO
     }
     
     // Events: Milestone Claim submission, vote casting, vote change, approval, and execution
-    event MilestoneClaimSubmit(uint256 indexed claimID, uint256 indexed campaignID, address indexed patient, uint256 amount, string ipfsHash);
+    event MilestoneClaimSubmit(uint256 indexed claimID, uint256 indexed campaignID, address indexed patient, uint256 amount, string invoiceHash);
     event VoteCast(uint256 indexed claimID, address indexed DAOMember, bool voteChoice);
     event VoteChange(uint256 indexed claimID, address indexed DAOMember, bool voteChoice);
     event MilestoneClaimExecute(uint256 indexed claimID, uint256 amount);
 
     // * Milestone Claim Action * //
-    function submitMilestoneClaim(uint256 campaignID, uint256 amount, string memory ipfsHash) external returns (uint256) 
+    function submitMilestoneClaim(uint256 campaignID, uint256 amount, string memory invoiceHash) external returns (uint256) 
     {
-        // Error checking for campaign ID, amount, and IPFS hash
+        // Error checking for campaign ID, amount, and Invoice hash
         require(campaignContract.isCampaignActive(campaignID), "Try again, campaign not active");
         require(amount > 0, "Try again, invalid target amount");
-        require(bytes(ipfsHash).length > 0, "Try again, IPFS hash required");
+        require(bytes(invoiceHash).length > 0, "Try again, Invoice hash required");
 
         // Error checking for patient of campaign
-        (address campaignPatient,,,,,) = campaignContract.getCampaign(campaignID);
+        (address campaignPatient,,,,,,) = campaignContract.getCampaign(campaignID);
         require(msg.sender == campaignPatient, "Unable to submit, not patient of this campaign");
         
         // Increment milestoneClaimCount
@@ -78,12 +78,12 @@ contract MediTrustDAO
         newClaim.campaignID = campaignID;
         newClaim.patient = msg.sender;
         newClaim.amount = amount;
-        newClaim.ipfsHash = ipfsHash;
+        newClaim.invoiceHash = invoiceHash;
         newClaim.yesCount = 0;
         newClaim.noCount = 0;
         newClaim.startDate = block.timestamp;
         
-        emit MilestoneClaimSubmit(claimID, campaignID, msg.sender, amount, ipfsHash);
+        emit MilestoneClaimSubmit(claimID, campaignID, msg.sender, amount, invoiceHash);
         return claimID;
     }
     
@@ -174,7 +174,7 @@ contract MediTrustDAO
         return approvalRate >= approvalPercentage;
     }
     
-    function getMilestoneClaimDetails(uint256 claimID) external view returns (uint256 campaignID, address patient, uint256 amount, string memory ipfsHash, uint256 yesCount, uint256 noCount, bool executed, uint256 startDate) //desc
+    function getMilestoneClaimDetails(uint256 claimID) external view returns (uint256 campaignID, address patient, uint256 amount, string memory invoiceHash, uint256 yesCount, uint256 noCount, bool executed, uint256 startDate) //desc
     {
         MilestoneClaim storage milestoneClaim = claims[claimID]; // temporarily read from mapping
         return // return tuple
@@ -182,7 +182,7 @@ contract MediTrustDAO
             milestoneClaim.campaignID, 
             milestoneClaim.patient,
             milestoneClaim.amount,
-            milestoneClaim.ipfsHash,
+            milestoneClaim.invoiceHash,
             milestoneClaim.yesCount,
             milestoneClaim.noCount,
             milestoneClaim.executed,

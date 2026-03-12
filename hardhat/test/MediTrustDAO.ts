@@ -9,8 +9,7 @@ import { getAddress } from "viem";
 describe("MediTrustDAO", function () 
 {
     
-    const ipfshash = "QmTestIpfsHashABCDEFG1234567"; // IPFS hash of campaign data
-    const claimipfs  = "QmClaimIpfsHashXYZ789"; // IPFS hash of milestone claim document
+    const invoicehash = "QmTestInvoiceHashABCDEFG1234567"; // Invoice hash of campaign data
     const target   = 2_000_000_000_000_000_000n; // 2 ETH in wei
     const duration = 30n; // 30 days as default duration
     const claimamount = 500_000_000_000_000_000n; // 0.5 ETH in wei
@@ -42,7 +41,7 @@ describe("MediTrustDAO", function ()
         });
 
         // Patient submits campaign request
-        await campaignAsPatient.write.submitCampaign([target, duration, ipfshash]);
+        await campaignAsPatient.write.submitCampaign([target, duration, invoicehash]);
 
         const campaignAsRep = await hre.viem.getContractAt("MediTrustCampaign", campaign.address, {
             client: { wallet: hospitalRep },
@@ -71,7 +70,7 @@ describe("MediTrustDAO", function ()
         {
             client: { wallet: patient },
         });
-        return daoAsPatient.write.submitMilestoneClaim([0n, claimamount, claimipfs]);
+        return daoAsPatient.write.submitMilestoneClaim([0n, claimamount, invoiceHash]);
     }
 
     // Helper function to allow DAO members to vote
@@ -114,14 +113,14 @@ describe("MediTrustDAO", function ()
             expect(await dao.read.claimCount()).to.equal(1n);
 
             // Retrieve milestone claim details
-            const [campaignID, pAddr, amount, ipfsHash, yesCount, noCount, executed] =
+            const [campaignID, pAddr, amount, invoice, yesCount, noCount, executed] =
                 await dao.read.getMilestoneClaimDetails([0n]);
 
             // Confirmed that the milestone claim data were stored correctly after submission
             expect(campaignID).to.equal(0n);
             expect(pAddr).to.equal(getAddress(patient.account.address));
             expect(amount).to.equal(claimamount);
-            expect(ipfsHash).to.equal(claimipfs);
+            expect(invoice).to.equal(invoicehash);
             
             // Set milestone claim votes to zero
             expect(yesCount).to.equal(0n);
@@ -152,18 +151,18 @@ describe("MediTrustDAO", function ()
 
             // User that is not a patient tries to submit milestone claims
             await expect(
-                daoAsStranger.write.submitMilestoneClaim([0n, claimamount, claimipfs])
+                daoAsStranger.write.submitMilestoneClaim([0n, claimamount, invoicehash])
             ).to.be.rejectedWith("Unable to submit, not patient of this campaign");
 
             // Milestone claim is set to zero
             await expect(
-                daoAsPatient.write.submitMilestoneClaim([0n, 0n, claimipfs])
+                daoAsPatient.write.submitMilestoneClaim([0n, 0n, invoicehash])
             ).to.be.rejectedWith("Try again, invalid target amount");
 
-            // Milestone claim has no IPFS hash
+            // Milestone claim has no Invoice hash
             await expect(
                 daoAsPatient.write.submitMilestoneClaim([0n, claimamount, ""])
-            ).to.be.rejectedWith("Try again, IPFS hash required");
+            ).to.be.rejectedWith("Try again, Invoice hash required");
         });
     });
 
