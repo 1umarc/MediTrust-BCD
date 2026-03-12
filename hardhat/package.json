@@ -7,7 +7,7 @@
     "deploy": "npx hardhat ignition deploy ./ignition/modules/Deployment.ts --reset --network localhost",
     "test": "npx hardhat test",
     "compile": "npx hardhat compile",
-    "a": "npx hardhat node"
+    "a": "concurrently \"npx hardhat node\" \"wait-on tcp:8545 && npm run deploy\""
   },
   "repository": {
     "type": "git",
@@ -26,6 +26,8 @@
     "hardhat": "^2.28.1"
   },
   "dependencies": {
-    "react-toastify": "^11.0.5"
+    "concurrently": "^9.2.1",
+    "react-toastify": "^11.0.5",
+    "wait-on": "^9.0.4"
   }
 }
