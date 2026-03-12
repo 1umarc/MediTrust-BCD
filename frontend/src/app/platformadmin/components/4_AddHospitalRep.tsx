@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { Address, isAddress } from 'viem'
 import { print } from '@/utils/toast'
@@ -31,11 +31,13 @@ export function AddHospitalRep() {
         })
     }
 
-    if (isSuccess) {
-        print('Hospital Representative added successfully!', 'success')
-        setAddress('')
-        setHospitalName('')
-    }
+    useEffect(() => {
+            if (isSuccess) {
+            print('Hospital Representative added successfully!', 'success')
+            setAddress('')
+            setHospitalName('')
+        }
+      }, [isSuccess])
 
     return (
         <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
