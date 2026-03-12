@@ -173,4 +173,83 @@ contract MediTrustCampaign
 
         return count;
     }
+
+    function getTotalRaised() external view returns (uint256) 
+    {
+        uint256 total = 0;
+        
+        for (uint256 i = 0; i < campaignCount; i++) 
+        {
+            total += campaigns[i].raised;
+        }
+    
+        return total;
+    }
+
+
+
+    // Add these to MediTrustCampaign.sol (after getTotalRaised)
+
+    function getAllCampaignIds() external view returns (uint256[] memory) {
+        uint256[] memory ids = new uint256[](campaignCount);
+        for (uint256 i = 0; i < campaignCount; i++) {
+            ids[i] = i;
+        }
+        return ids;
+    }
+
+    function getPendingCampaignIds() external view returns (uint256[] memory) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < campaignCount; i++) {
+            if (campaigns[i].status == CampaignStatus.Pending) count++;
+        }
+        
+        uint256[] memory ids = new uint256[](count);
+        uint256 index = 0;
+        for (uint256 i = 0; i < campaignCount; i++) {
+            if (campaigns[i].status == CampaignStatus.Pending) {
+                ids[index] = i;
+                index++;
+            }
+        }
+        return ids;
+    }
+
+    function getApprovedCampaignIds() external view returns (uint256[] memory) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < campaignCount; i++) {
+            if (campaigns[i].status == CampaignStatus.Approved) count++;
+        }
+        
+        uint256[] memory ids = new uint256[](count);
+        uint256 index = 0;
+        for (uint256 i = 0; i < campaignCount; i++) {
+            if (campaigns[i].status == CampaignStatus.Approved) {
+                ids[index] = i;
+                index++;
+            }
+        }
+        return ids;
+    }
+
+    function getCompletedCampaignIds() external view returns (uint256[] memory) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < campaignCount; i++) {
+            if (campaigns[i].status == CampaignStatus.Completed) count++;
+        }
+        
+        uint256[] memory ids = new uint256[](count);
+        uint256 index = 0;
+        for (uint256 i = 0; i < campaignCount; i++) {
+            if (campaigns[i].status == CampaignStatus.Completed) {
+                ids[index] = i;
+                index++;
+            }
+        }
+        return ids;
+    }
+
+
+
+
 }

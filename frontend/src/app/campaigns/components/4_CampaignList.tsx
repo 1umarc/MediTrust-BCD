@@ -11,52 +11,87 @@ import { EmptyState } from '@/app/images'
 export function CampaignList() {
     const [activeFilter, setActiveFilter] = useState<FilterType>('all')
 
-    // Get total campaign count (from smart contract)
-    const { data: campaignCount } = useReadContract({
+    // ========================================
+    // FETCH CAMPAIGN IDS FROM SMART CONTRACT
+    // ALL HOOKS AT TOP LEVEL - NO LOOPS!
+    // ========================================
+
+    // Get all campaign IDs
+    const { data: allCampaignIdsData } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
-        functionName: 'campaignCount'
+        functionName: 'getAllCampaignIds'
     })
 
-    const count = campaignCount ? Number(campaignCount) : 0
+    // Get pending campaign IDs
+    const { data: pendingIdsData } = useReadContract({
+        address: campaignContractAddress as Address,
+        abi: campaignAbi.abi,
+        functionName: 'getPendingCampaignIds'
+    })
 
-    // Create Campaign ID List
-    const allCampaignIds = Array.from({ length: count }, (_, i) => i)
+    // Get approved campaign IDs
+    const { data: approvedIdsData } = useReadContract({
+        address: campaignContractAddress as Address,
+        abi: campaignAbi.abi,
+        functionName: 'getApprovedCampaignIds'
+    })
+
+    // Get completed campaign IDs
+    const { data: completedIdsData } = useReadContract({
+        address: campaignContractAddress as Address,
+        abi: campaignAbi.abi,
+        functionName: 'getCompletedCampaignIds'
+    })
+
+    // ========================================
+    // CONVERT TO JAVASCRIPT ARRAYS
+    // ========================================
+
+    const allCampaignIds = allCampaignIdsData 
+        ? (allCampaignIdsData as bigint[]).map(id => Number(id))
+        : []
     
-    // Get campaign statuses for filtering
-    const campaignStatuses = allCampaignIds.map(campaignID => {
-        const { data: campaign } = useReadContract({
-            address: campaignContractAddress as Address,
-            abi: campaignAbi.abi,
-            functionName: 'getCampaign',
-            args: [campaignID]
-        })
-        return campaign ? (campaign as any)[5] : null // status is at index 5
-    })
+    const pendingIds = pendingIdsData
+        ? (pendingIdsData as bigint[]).map(id => Number(id))
+        : []
+    
+    const approvedIds = approvedIdsData
+        ? (approvedIdsData as bigint[]).map(id => Number(id))
+        : []
+    
+    const completedIds = completedIdsData
+        ? (completedIdsData as bigint[]).map(id => Number(id))
+        : []
 
-    // Filter campaigns based on active filter
-    const filteredCampaignIds = allCampaignIds.filter((campaignID, index) => {
-        const status = campaignStatuses[index]
-        if (status === null) return false
-        
+    // ========================================
+    // FILTER BASED ON ACTIVE FILTER
+    // ========================================
+
+    const getFilteredCampaigns = () => {
         switch (activeFilter) {
             case 'pending':
-                return status === 0
+                return pendingIds
             case 'approved':
-                return status === 1
+                return approvedIds
             case 'completed':
-                return status === 3
-            default:
-                return true
+                return completedIds
+            default: // 'all'
+                return allCampaignIds
         }
-    })
+    }
 
-    // Calculate counts for each filter
+    const filteredCampaignIds = getFilteredCampaigns()
+
+    // ========================================
+    // CALCULATE COUNTS FOR FILTERS
+    // ========================================
+
     const campaignCounts = {
         all: allCampaignIds.length,
-        pending: campaignStatuses.filter(s => s === 0).length,
-        approved: campaignStatuses.filter(s => s === 1).length,
-        completed: campaignStatuses.filter(s => s === 3).length
+        pending: pendingIds.length,
+        approved: approvedIds.length,
+        completed: completedIds.length
     }
 
     return (

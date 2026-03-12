@@ -6,6 +6,8 @@ import { campaignContractAddress } from '@/utils/smartContractAddress'
 import { OnGoingIcon, TotalCampaignIcon, Approve, MoneyIcon } from '@/app/images'
 
 export function CampaignStats() {
+
+    // 1. Get total campaign count
     const { data: campaignCount } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
@@ -14,30 +16,37 @@ export function CampaignStats() {
 
     const count = campaignCount ? Number(campaignCount) : 0
 
-    // Fetch all campaigns to calculate stats
-    // TODO: Calculate statistics - Same goals 
-    // TODO: code logic issue
-    // converts the blockchain value into a normal JavaScript number.
-    const campaigns = Array.from({ length: count }, (_, campaignID) => {
-        const { data: campaign } = useReadContract({
-            address: campaignContractAddress as Address,
-            abi: campaignAbi.abi,
-            functionName: 'getCampaign',
-            args: [campaignID]
-        })
-        return campaign
-    }).filter(Boolean)
+    // 2. Get approved campaigns count (Ongoing)
+    // Uses getCampaignCount(status) with status = 1 (Approved)
+    const { data: approvedCount } = useReadContract({
+        address: campaignContractAddress as Address,
+        abi: campaignAbi.abi,
+        functionName: 'getCampaignCount',
+        args: [1]  // 1 = CampaignStatus.Approved
+    })
+
+     // 3. Get completed campaigns count
+    // Uses getCampaignCount(status) with status = 3 (Completed)
+    const { data: completedCount } = useReadContract({
+        address: campaignContractAddress as Address,
+        abi: campaignAbi.abi,
+        functionName: 'getCampaignCount',
+        args: [3]  // 3 = CampaignStatus.Completed
+    })
+
+    // 4. Get total raised
+    const { data: totalRaisedData } = useReadContract({
+        address: campaignContractAddress as Address,
+        abi: campaignAbi.abi,
+        functionName: 'getTotalRaised'  
+    })
 
     // Calculate statistics
-    const totalCampaigns = campaigns.length
-    const ongoingCampaigns = campaigns.filter((c: any) => c && c[5] === 1).length // Status 1 = Approved
-    const completedCampaigns = campaigns.filter((c: any) => c && c[5] === 3).length // Status 3 = Completed
-    const totalRaised = campaigns.reduce((sum: bigint, campaign: any) => {
-        if (campaign) {
-            return sum + BigInt(campaign[2]) // raisedAmount
-        }
-        return sum
-    }, BigInt(0))
+    const totalCampaigns = campaignCount ? Number(campaignCount) : 0
+    const ongoingCampaigns = approvedCount ? Number(approvedCount) : 0
+    const completedCampaigns = completedCount ? Number(completedCount) : 0
+    const totalRaised = totalRaisedData ? Number(totalRaisedData) : Number(0)
+
 
     // Define data in an array
     const stats = [
@@ -67,7 +76,7 @@ export function CampaignStats() {
         },
         {
             label: 'Total Raised',
-            value: `${formatEther(totalRaised)} HETH`,
+            value: `${Number(totalRaised)} HETH`,
             icon: <img src={MoneyIcon.src} alt="Money Icon" className="w-7 h-7"/>,
             gradient: 'from-amber-400 to-orange-500',
             bgGradient: 'from-amber-500/10 to-orange-500/10',
