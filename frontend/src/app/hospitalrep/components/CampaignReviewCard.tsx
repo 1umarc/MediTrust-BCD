@@ -1,21 +1,41 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { Address, formatEther } from 'viem'
 import { print } from '@/utils/toast'
 import campaignAbi from '@/abi/MediTrustCampaign.json'
 import { campaignContractAddress } from '@/utils/smartContractAddress'
 
+//TODO:Add Explanation?? or comment
 interface CampaignReviewCardProps {
     campaignID: number
 }
 
 export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
-    const [viewingDocuments, setViewingDocuments] = useState(false)
     const [reason, setRejectionReason] = useState('')
     const [showRejectForm, setShowRejectForm] = useState(false)
 
-    // Fetch campaign data
+        /** TODO: Dummy Data
+    const campaign = 
+    [
+        '0x1234567890abcdef1234567890abcdef12345678',
+        BigInt('2000000000000000000'),                        // 2 ETH
+        BigInt('500000000000000000'),                         // raisedAmount (0.5 ETH)
+        BigInt(Math.floor(Date.now() / 1000) + 86400 * 30),  // 30 days from now
+        'QmPlaceholderHashForCampaignMetadata',
+        0                                                     // 0 = pending
+    ]
+
+    // TODO: Dummy metadata - replace with real IPFS fetch when connected
+    const dummyMetadata = {
+        CampaignTitle: 'Help Sarah Fight Leukemia',
+        campaignImageCid: '/ImageTesting.png',
+        medicalDiagnosisCid: '/TestingPDF1.pdf',
+        treatmentQuotationCid: '/TestingPDF2.pdf',
+    }
+    **/
+
+    // Smart Contract: Fetch campaign data
     const { data: campaign } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
@@ -26,6 +46,7 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
     const { data: hash, writeContract, isPending } = useWriteContract()
     const { isSuccess } = useWaitForTransactionReceipt({ hash })
 
+    // TODO: Uncomment it when wallet connected
     if (!campaign) return null
 
     const [patient, target, raised, duration, ipfsHash, status] = campaign as any[]
@@ -34,7 +55,9 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
     if (status !== 0) return null
 
     const expiryDate = new Date(Number(duration) * 1000)
-    const daysUntilExpiry = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    const raisedEth = parseFloat(formatEther(raised))
+    const targetEth = parseFloat(formatEther(target))
+    const progressPercent = Math.min((raisedEth / targetEth) * 100, 100)
 
     const handleApprove = () => {
         writeContract({
@@ -65,170 +88,181 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
         setRejectionReason('')
     }
 
-    return (
+     return (
         <div className="group relative">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
             
             <div className="relative bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
                 {/* Header */}
-                <div className="flex justify-between items-start mb-4">
+                //TODO: Further modify and explanation
+                 {/* ── 1. Campaign Name ─────────────────────── */}
+                <div className="flex items-start justify-between px-6 pt-6 pb-4">
                     <div>
-                        <h3 className="text-xl font-bold text-white mb-1">Campaign #{campaignID}</h3>
-                        <p className="text-sm text-slate-400 font-mono">{patient.slice(0, 6)}...{patient.slice(-4)}</p>
+                        <h3 className="text-lg font-black text-white leading-tight">
+                            {/* {campaignTitle ?? metadata?.CampaignTitle ?? '—'} */}
+                        </h3>
+                        <p className="text-xs text-slate-500 font-mono mt-1">
+                            {patient.slice(0, 6)}...{patient.slice(-4)}
+                        </p>
                     </div>
-                    <span className="px-3 py-1.5 bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded-full text-xs font-bold">
-                        ⏳ Pending Review
+                    <span className="flex-shrink-0 px-3 py-1.5 bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded-full text-xs font-bold">
+                        ⏳ Pending
                     </span>
                 </div>
 
-                {/* Campaign Details */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-                        <div className="text-xs text-slate-500 mb-1 font-semibold">Target Amount</div>
-                        <div className="text-2xl font-bold text-cyan-400">{formatEther(target)} ETH</div>
-                    </div>
-                    <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-                        <div className="text-xs text-slate-500 mb-1 font-semibold">Campaign Duration</div>
-                        <div className="text-2xl font-bold text-purple-400">{daysUntilExpiry} days</div>
+                {/* ── 2. Campaign Image ────────────────────────────────────── */}
+                <div className="px-6 mb-5">
+                    <div className="w-full h-44 rounded-xl overflow-hidden border border-slate-700/50 bg-slate-800/50 flex items-center justify-center">
+                        <img
+                            // src={`${dummyMetadata.campaignImageCid}`}
+                            alt="Campaign"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                                e.currentTarget.style.display = 'none'
+                                const parent = e.currentTarget.parentElement
+                                if (parent) {
+                                    parent.innerHTML = `
+                                        <div class="flex flex-col items-center justify-center gap-2 text-slate-600 w-full h-full">
+                                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            <span class="text-xs font-semibold">No Image Available</span>
+                                        </div>`
+                                }
+                            }}
+                        />
                     </div>
                 </div>
 
-                {/* Expiry Info */}
-                <div className="mb-6 p-3 bg-slate-800/30 border border-slate-700/50 rounded-xl">
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-400">Expires:</span>
-                        <span className="text-slate-300 font-semibold">{expiryDate.toLocaleDateString()}</span>
+                {/* ── 3. Raised / Target Amount ────────────────────────────── */}
+                <div className="px-6 mb-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
+                            <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Raised</div>
+                            <div className="text-xl font-black text-emerald-400">{raisedEth} ETH</div>
+                        </div>
+                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
+                            <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Target</div>
+                            <div className="text-xl font-black text-cyan-400">{targetEth} ETH</div>
+                        </div>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="mt-3">
+                        <div className="flex justify-between text-xs text-slate-500 mb-1.5">
+                            {/* <span>{progressPercent.toFixed(1)}% funded</span> */}
+                            <span>{raisedEth} / {targetEth} ETH</span>
+                        </div>
+                        <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 rounded-full transition-all"
+                                // style={{ width: `${progressPercent}%` }}
+                            />
+                        </div>
                     </div>
                 </div>
 
-                {/* Medical Documents */}
-                <button
-                    onClick={() => setViewingDocuments(!viewingDocuments)}
-                    className="w-full mb-6 px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-slate-300 hover:border-cyan-500/50 transition-all text-sm font-semibold"
-                >
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                {/* ── 4. Expires ───────────────────────────────────────────── */}
+                <div className="px-6 mb-4">
+                    <div className="flex items-center justify-between p-3 bg-slate-800/30 border border-slate-700/50 rounded-xl text-sm">
+                        <span className="text-slate-400 font-semibold">⏰ Expires</span>
+                        <span className="text-white font-bold">
+                            {expiryDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                    </div>
+                </div>
+
+                {/* ── 5 & 6. Document Download Rows ───────────────────────── */}
+                <div className="px-6 mb-5 space-y-2">
+
+                    {/* Medical Diagnosis */}
+                    <div className="flex items-center justify-between p-3 bg-slate-800/30 border border-slate-700/50 rounded-xl">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
                             </svg>
-                            <span>📄 View Medical Documentation</span>
+                            <span className="text-sm text-slate-300 font-medium truncate">Medical Diagnosis.pdf</span>
                         </div>
-                        <svg className={`w-5 h-5 transition-transform ${viewingDocuments ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
-                </button>
-
-                {viewingDocuments && (
-                    <div className="mb-6 p-4 bg-slate-800/30 border border-slate-700/50 rounded-xl space-y-4">
-                        <div>
-                            <p className="text-sm text-slate-400 mb-2 font-semibold">IPFS Hash:</p>
-                            <p className="text-xs text-cyan-400 font-mono break-all mb-3">{ipfsHash}</p>
-                        </div>
-                        
-                        <div className="space-y-2">
-                            <p className="text-sm text-slate-400 font-semibold">Available Documents:</p>
-                            <div className="space-y-2">
-                                {['Medical Diagnosis', 'Medical Reports', 'Medication Records (Quotation)', 'Campaign Image'].map((doc, i) => (
-                                    <div key={i} className="flex items-center gap-2 text-sm text-slate-300 p-2 bg-slate-900/50 rounded-lg">
-                                        <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                        </svg>
-                                        {doc}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        
                         <a
-                            href={`https://ipfs.io/ipfs/${ipfsHash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-lg hover:bg-cyan-500/20 transition-all text-sm font-semibold"
+                            // href={`${dummyMetadata.medicalDiagnosisCid}`}
+                            download
+                            className="flex-shrink-0 ml-3 flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-lg hover:bg-cyan-500/20 transition-all text-xs font-bold"
                         >
-                            Open Documents in IPFS
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                             </svg>
+                            Download
                         </a>
                     </div>
-                )}
 
-                {/* Verification Checklist */}
-                <div className="mb-6 p-4 bg-slate-800/30 border border-slate-700/50 rounded-xl">
-                    <h4 className="text-sm font-bold text-white mb-3">Verification Checklist</h4>
-                    <div className="space-y-2">
-                        {[
-                            'Medical diagnosis is authentic and complete',
-                            'Treatment plan aligns with stated medical need',
-                            'Target amount is reasonable for stated treatment',
-                            'Campaign duration is feasible for treatment timeline',
-                            'All required documents are present and valid'
-                        ].map((item, i) => (
-                            <label key={i} className="flex items-start gap-2 text-sm text-slate-400 cursor-pointer hover:text-slate-300 transition-colors">
-                                <input type="checkbox" className="mt-1 rounded border-slate-600 text-cyan-500 focus:ring-cyan-500" />
-                                <span>{item}</span>
-                            </label>
-                        ))}
+                    {/* Treatment Quotation */}
+                    <div className="flex items-center justify-between p-3 bg-slate-800/30 border border-slate-700/50 rounded-xl">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <svg className="w-4 h-4 text-blue-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-sm text-slate-300 font-medium truncate">Treatment Quotation.pdf</span>
+                        </div>
+                        <a
+                            // href={`${dummyMetadata.treatmentQuotationCid}`}
+                            download
+                            className="flex-shrink-0 ml-3 flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-lg hover:bg-cyan-500/20 transition-all text-xs font-bold"
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Download
+                        </a>
                     </div>
                 </div>
 
-                {/* Action Buttons */}
-                {!showRejectForm ? (
-                    <div className="grid grid-cols-2 gap-4">
-                        <button
-                            onClick={() => setShowRejectForm(true)}
-                            disabled={isPending}
-                            className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-bold hover:from-red-400 hover:to-pink-500 disabled:opacity-50 transition-all shadow-lg shadow-red-500/20"
-                        >
-                            Reject Campaign
-                        </button>
-                        <button
-                            onClick={handleApprove}
-                            disabled={isPending}
-                            className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold hover:from-emerald-400 hover:to-teal-500 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20"
-                        >
-                            {isPending ? 'Processing...' : 'Approve Campaign'}
-                        </button>
-                    </div>
-                ) : (
-                    /* Rejection Form */
-                    <div className="space-y-4">
-                        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
-                            <p className="text-sm text-red-300 font-semibold mb-2">⚠️ Rejection Reason Required</p>
-                            <p className="text-xs text-red-400">
-                                Please provide a clear reason for rejection. This helps the campaign creator understand what needs to be corrected.
-                            </p>
-                        </div>
-                        
-                        <textarea
-                            value={reason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
-                            rows={4}
-                            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 outline-none transition-all resize-none"
-                            placeholder="e.g., Medical diagnosis documents are incomplete. Please include full treatment plan from physician."
-                        />
-                        
-                        <div className="grid grid-cols-2 gap-4">
+                {/* ── 7. Action Buttons ────────────────────────────────────── */}
+                <div className="px-6 pb-6">
+                    {!showRejectForm ? (
+                        <div className="grid grid-cols-2 gap-3">
                             <button
-                                onClick={() => {
-                                    setShowRejectForm(false)
-                                    setRejectionReason('')
-                                }}
-                                className="px-6 py-3 bg-slate-800 border border-slate-700 text-slate-300 rounded-xl font-bold hover:bg-slate-700 transition-all"
+                                onClick={() => setShowRejectForm(true)}
+                                disabled={isPending}
+                                className="px-4 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-bold hover:from-red-400 hover:to-pink-500 disabled:opacity-50 transition-all text-sm shadow-lg shadow-red-500/20"
                             >
-                                Cancel
+                                ✕ Reject
                             </button>
                             <button
-                                onClick={handleReject}
-                                disabled={isPending || !reason.trim()}
-                                className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-bold hover:from-red-400 hover:to-pink-500 disabled:opacity-50 transition-all shadow-lg shadow-red-500/20"
+                                onClick={handleApprove}
+                                disabled={isPending}
+                                className="px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold hover:from-emerald-400 hover:to-teal-500 disabled:opacity-50 transition-all text-sm shadow-lg shadow-emerald-500/20"
                             >
-                                {isPending ? 'Rejecting...' : 'Confirm Rejection'}
+                                {isPending ? 'Processing...' : '✓ Approve'}
                             </button>
                         </div>
-                    </div>
-                )}
+                    ) : (
+                        <div className="space-y-3">
+                            <textarea
+                                value={reason}
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                                rows={3}
+                                className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 outline-none transition-all resize-none text-sm"
+                                placeholder="e.g., Medical diagnosis documents are incomplete..."
+                            />
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => { setShowRejectForm(false); setRejectionReason('') }}
+                                    className="px-4 py-3 bg-slate-800 border border-slate-700 text-slate-300 rounded-xl font-bold hover:bg-slate-700 transition-all text-sm"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleReject}
+                                    disabled={isPending || !reason.trim()}
+                                    className="px-4 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-bold disabled:opacity-50 transition-all text-sm"
+                                >
+                                    {isPending ? 'Rejecting...' : 'Confirm Rejection'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
             </div>
         </div>
     )

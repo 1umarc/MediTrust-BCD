@@ -81,10 +81,9 @@ export function MilestoneClaimList() {
                             <span className="text-lg">{filter.icon}
                                 </span>
                                 {filter.label}
-                                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${ activeFilter === filter.id }`}>
+                                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${activeFilter === filter.id ? 'bg-white/20' : 'bg-slate-800'}`}></span>
                                 {filter.count}
                             </span>
-                        </span>
                     </button>
                 ))}
             </div>

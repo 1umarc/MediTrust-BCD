@@ -1,10 +1,11 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseEther, Address } from 'viem'
 import { print } from '@/utils/toast'
 import campaignAbi from '@/abi/MediTrustCampaign.json'
 import { campaignContractAddress } from '@/utils/smartContractAddress'
+import { CampaignSubmissionSuccess } from './CampaignSubmissionSuccess' 
 import { saveToIPFS, getFromIPFS } from '@/utils/ipfsconfig'
 import { saveToDB, getFromDB } from '@/utils/dbconfig'
 
@@ -26,6 +27,8 @@ export function CreataCampaignForm()
 {
     const [currentStep, setCurrentStep] = useState(1)
     const [uploading, setUploading] = useState(false)
+    const [submitted, setSubmitted] = useState(false) 
+    
 
     // Form State - Modify 
     const [formData, setFormData] = useState<CampaignFormData>
@@ -101,14 +104,14 @@ export function CreataCampaignForm()
               reason: formData.CampaignDescription,
               termsaccepted: formData.TermsAccepted,
               imagehash: bannerHash
-});
+              })
 
-console.log("Saved record:", saved.record);
+            console.log("Saved record:", saved.record);
 
-// Fetch all campaigns
-// const campaigns = await getFromDB("campaigndetails");
-// bannerHash = campaigns[2].imagehash;
-// console.log(campaigns);
+            // Fetch all campaigns
+            // const campaigns = await getFromDB("campaigndetails");
+            // bannerHash = campaigns[2].imagehash;
+            // console.log(campaigns);
             
             writeContract
             ({
@@ -118,6 +121,8 @@ console.log("Saved record:", saved.record);
                 args: [parseEther(formData.TargetAmount), parseInt(formData.CampaignDuration), ipfsHash]
             })
 
+            // TODO: Set the submitted state to true immediately for testing purpose
+            setSubmitted(true)
         } catch (error) 
 
         {
@@ -128,10 +133,25 @@ console.log("Saved record:", saved.record);
         }
     }
 
-    if (isSuccess)
-    {
-        print('Campaign created successfully!', 'success')
+  useEffect(() => {
+    if (isSuccess) {
+      print('Campaign created successfully!', 'success')
+        setSubmitted(true)
     }
+  }, [isSuccess])
+
+    if (submitted) {
+      return ( 
+        <CampaignSubmissionSuccess 
+          formData={{
+            CreatorName: formData.CreatorName,
+            CampaignTitle: formData.CampaignTitle,
+            TargetAmount: formData.TargetAmount,
+            CampaignDuration: formData.CampaignDuration,
+        }} 
+      />
+    )
+}
 
   // Frontend Code
   return (

@@ -15,6 +15,9 @@ export function CampaignStats() {
     const count = campaignCount ? Number(campaignCount) : 0
 
     // Fetch all campaigns to calculate stats
+    // TODO: Calculate statistics - Same goals 
+    // TODO: code logic issue
+    // converts the blockchain value into a normal JavaScript number.
     const campaigns = Array.from({ length: count }, (_, campaignID) => {
         const { data: campaign } = useReadContract({
             address: campaignContractAddress as Address,
