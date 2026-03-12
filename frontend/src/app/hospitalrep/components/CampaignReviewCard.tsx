@@ -51,7 +51,7 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
     // TODO: Uncomment it when wallet connected
     if (!campaign) return null
 
-    const [patient, target, raised, duration, ipfsHash, status] = campaign as any[]
+    const [patient, target, raised, duration, diagnosisHash, quotationHash, status] = campaign as any[]
     
     // Only show pending campaigns
     if (status !== 0) return null

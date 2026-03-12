@@ -54,7 +54,7 @@ export function MilestoneClaimCard({ campaignID, claimID}: MilestoneClaimCardPro
     //TODO:uncomment when connect to real blockchain
     // if (!milestoneClaim || !votingData) return null
 
-    const [description, amount, ipfsHash, isApproved] = milestoneClaim as any[]
+    const [description, amount, invoiceHash, isApproved] = milestoneClaim as any[]
     const [totalVotes, approvalVotes, hasVoted, userVote] = votingData as any[]
 
     const approvalPercentage = totalVotes > 0 ? (Number(approvalVotes) / Number(totalVotes)) * 100 : 0

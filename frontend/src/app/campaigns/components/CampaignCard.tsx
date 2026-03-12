@@ -19,7 +19,7 @@ export function CampaignCard({ campaignID }: CampaignCardProps) {
 
     if (!campaign) return null
 
-    const [patient, target, raised, duration, ipfsHash, status] = campaign as any[]
+    const [patient, target, raised, duration, diagnosisHash, quotationHash, status] = campaign as any[]
     const statusLabels = ['Pending', 'Approved', 'Rejected', 'Completed']
     const progress = (Number(raised) / Number(target)) * 100
 

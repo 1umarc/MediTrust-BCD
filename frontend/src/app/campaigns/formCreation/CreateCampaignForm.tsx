@@ -118,7 +118,7 @@ export function CreataCampaignForm()
                 address: campaignContractAddress as Address,
                 abi: campaignAbi.abi,
                 functionName: 'submitCampaign',
-                args: [parseEther(formData.TargetAmount), parseInt(formData.CampaignDuration), ipfsHash]
+                args: [parseEther(formData.TargetAmount), parseInt(formData.CampaignDuration), diagnosisHash, quotationHash]
             })
 
             // TODO: Set the submitted state to true immediately for testing purpose
