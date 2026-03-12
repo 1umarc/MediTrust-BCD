@@ -1,4 +1,5 @@
-// FILES, decentralized storage
+// Files storage using decentralized IPFS
+// Uploads a file to IPFS through backend using Pinata
 export async function saveToIPFS(file: File | null): Promise<string> 
 {
     const formData = new FormData()
@@ -12,7 +13,7 @@ export async function saveToIPFS(file: File | null): Promise<string>
     {
         const response = await fetch("http://localhost:5000/api/ipfs/upload", 
         {
-            method: "POST",
+            method: "post",
             body: formData
         })
 
@@ -23,11 +24,12 @@ export async function saveToIPFS(file: File | null): Promise<string>
     catch (error) 
     {
 
-        console.error("IPFS Upload Error:", error)
+        console.error("Error in uploading file to IPFS:", error)
         throw error
     }
 }
 
+// Creates public gateway URL to access file stored in IPFS
 export function getFromIPFS(hash: string): string 
 {
   return `https://gateway.pinata.cloud/ipfs/${hash}`;

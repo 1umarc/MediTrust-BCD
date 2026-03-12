@@ -3,163 +3,201 @@ import { expect } from "chai";
 import hre from "hardhat";
 import { getAddress } from "viem";
 
-describe("MediTrustRoles", function () {
+describe("MediTrustRoles", function () 
+{
 
-    async function deployRolesFixture() {
-        const [owner, hospitalRep, daoMember, stranger] = await hre.viem.getWalletClients();
+    async function deployRolesFixture() 
+    {
+        const [owner, hospitalrep, daomember, stranger] = await hre.viem.getWalletClients();
 
         const roles = await hre.viem.deployContract("MediTrustRoles");
-        const publicClient = await hre.viem.getPublicClient();
+        
+        // Public client to read blockchain data and wait for transactions 
+        const publicclient = await hre.viem.getPublicClient();
 
-        return { roles, owner, hospitalRep, daoMember, stranger, publicClient };
+        return { roles, owner, hospitalrep, daomember, stranger, publicclient };
     }
 
     // ─── Deployment ───────────────────────────────────────────────────────────
     describe("Deployment", function () {
-        it("Scenario 43: Set the deployer as owner", async function () 
+        it("Scenario 42: Set the deployer as owner", async function () 
         {
             const { roles, owner } = await loadFixture(deployRolesFixture);
+            
+            // Verify that contract deployer is set as owner
             expect(await roles.read.owner()).to.equal(getAddress(owner.account.address));
         });
     });
 
     // ─── Hospital Representatives ──────────────────────────────────────────────
     describe("Hospital Representatives", function () {
-        it("Scenario 44: Owner can add a hospital rep but cannot add the same hospital rep twice", async function () 
+        it("Scenario 43: Owner can add a hospital rep but cannot add the same hospital rep twice", async function () 
         {
-            const { roles, hospitalRep } = await loadFixture(deployRolesFixture);
+            const { roles, hospitalrep } = await loadFixture(deployRolesFixture);
 
-            // First addition should succeed
-            await roles.write.addHospitalRep([hospitalRep.account.address]);
-            expect(await roles.read.isHospitalRep([hospitalRep.account.address])).to.be.true;
+            // Owner adds hospital rep
+            await roles.write.addHospitalRep([hospitalrep.account.address]);
+            
+            // Verify that the account address is set as hospital rep
+            expect(await roles.read.isHospitalRep([hospitalrep.account.address])).to.be.true;
 
-            // Second addition should revert
+            // Attempts to add the same hospital rep should fail
             await expect(
-                roles.write.addHospitalRep([hospitalRep.account.address])
+                roles.write.addHospitalRep([hospitalrep.account.address])
             ).to.be.rejectedWith("Unable to add, already a hospital representative");
         });
 
-        it("Scenario 45: User that is not an owner cannot add hospital rep", async function () 
+        it("Scenario 44: User that is not an owner cannot add hospital rep", async function () 
         {
-            const { roles, hospitalRep, stranger } = await loadFixture(deployRolesFixture);
-            const rolesAsStranger = await hre.viem.getContractAt("MediTrustRoles", roles.address, {
+            const { roles, hospitalrep, stranger } = await loadFixture(deployRolesFixture);
+            
+            // Access roles contract using non-onwer account
+            const rolesAsStranger = await hre.viem.getContractAt("MediTrustRoles", roles.address, 
+            {
                 client: { wallet: stranger },
             });
+
+            // Non-owner is not allowed to add hospital rep
             await expect(
-                rolesAsStranger.write.addHospitalRep([hospitalRep.account.address])
+                rolesAsStranger.write.addHospitalRep([hospitalrep.account.address])
             ).to.be.rejected;
         });
 
-        it("Scenario 46: Owner can remove a hospital rep and cannot remove non-existent hospital rep", async function () 
+        it("Scenario 45: Owner can remove a hospital rep and cannot remove non-existent hospital rep", async function () 
         {
-            const { roles, hospitalRep, stranger } = await loadFixture(deployRolesFixture);
+            const { roles, hospitalrep, stranger } = await loadFixture(deployRolesFixture);
 
-            // Add then remove hospital representative
-            await roles.write.addHospitalRep([hospitalRep.account.address]);
-            await roles.write.removeHospitalRep([hospitalRep.account.address]);
+            // Owner adds hospital rep
+            await roles.write.addHospitalRep([hospitalrep.account.address]);
+            
+            // Owner removes hospital rep
+            await roles.write.removeHospitalRep([hospitalrep.account.address]);
 
-            expect(await roles.read.isHospitalRep([hospitalRep.account.address])).to.be.false;
+            // Verify that account address is no longer a hospital rep
+            expect(await roles.read.isHospitalRep([hospitalrep.account.address])).to.be.false;
 
-            // Attempt to remove a non-existent representative
+            // Attempt to remove non-hospital rep account address fails
             await expect(
                 roles.write.removeHospitalRep([stranger.account.address])
             ).to.be.rejectedWith("Unable to remove, not a hospital representative");
         });
 
-        it("Scenario 47: Revert when user that is not an owner tries to remove a hospital rep", async function () 
+        it("Scenario 46: Revert when user that is not an owner tries to remove a hospital rep", async function () 
         {
-            const { roles, hospitalRep, stranger } = await loadFixture(deployRolesFixture);
-            // Owner adds hospital representative first
-            await roles.write.addHospitalRep([hospitalRep.account.address]);
+            const { roles, hospitalrep, stranger } = await loadFixture(deployRolesFixture);
+            
+            // Owner adds hospital representative 
+            await roles.write.addHospitalRep([hospitalrep.account.address]);
 
-            // Non-owner tries to remove hospital representative
+            // Non-owner tries to remove hospital rep
             const rolesAsStranger = await hre.viem.getContractAt("MediTrustRoles", roles.address, {
                 client: { wallet: stranger },
             });
+            
+            // Hospital rep removal fails because only the owner can manage roles
             await expect(
-                rolesAsStranger.write.removeHospitalRep([hospitalRep.account.address])
+                rolesAsStranger.write.removeHospitalRep([hospitalrep.account.address])
             ).to.be.rejected;
         });
     });
 
     // ─── DAO Members ──────────────────────────────────────────────────────────
-    describe("DAO Members", function () {
-        it("Scenario 48: Owner can add DAO member but cannot add the same member twice", async function () 
+    describe("DAO Members", function () 
+    {
+        it("Scenario 47: Owner can add DAO member but cannot add the same member twice", async function () 
         {
-            const { roles, daoMember } = await loadFixture(deployRolesFixture);
+            const { roles, daomember } = await loadFixture(deployRolesFixture);
 
-            // First addition should succeed
-            await roles.write.addDAOMember([daoMember.account.address]);
+            // Owner adds DAO member
+            await roles.write.addDAOMember([daomember.account.address]);
 
-            expect(await roles.read.isDAOMember([daoMember.account.address])).to.be.true;
+            // Verify that account address is registered as DAO member
+            expect(await roles.read.isDAOMember([daomember.account.address])).to.be.true;
+            
+            // Total number of DAO members is updated
             expect(await roles.read.totalDAOMembers()).to.equal(1n);
 
-            // Second addition should revert
+            // Attempt to add the same DAO member fails
             await expect(
-                roles.write.addDAOMember([daoMember.account.address])
+                roles.write.addDAOMember([daomember.account.address])
             ).to.be.rejectedWith("Unable to add, already a DAO member");
         });
 
-        it("Scenario 49: User that is not an owner cannot add DAO member", async function () 
+        it("Scenario 48: User that is not an owner cannot add DAO member", async function () 
         {
-            const { roles, daoMember, stranger } = await loadFixture(deployRolesFixture);
-            const rolesAsStranger = await hre.viem.getContractAt("MediTrustRoles", roles.address, {
+            const { roles, daomember, stranger } = await loadFixture(deployRolesFixture);
+            
+            // Access roles contracts using non-owner account
+            const rolesAsStranger = await hre.viem.getContractAt("MediTrustRoles", roles.address, 
+            {
                 client: { wallet: stranger },
             });
+
+            // Non-onwer cannot add DAO members
             await expect(
-                rolesAsStranger.write.addDAOMember([daoMember.account.address])
+                rolesAsStranger.write.addDAOMember([daomember.account.address])
             ).to.be.rejected;
         });
 
-        it("Scenario 50: Owner can remove DAO member when multiple exist but cannot remove the remaining one DAO member", async function () 
+        it("Scenario 49: Owner can remove DAO member when multiple exist but cannot remove the remaining one DAO member", async function () 
         {
-            const { roles, daoMember, stranger } = await loadFixture(deployRolesFixture);
+            const { roles, daomember, stranger } = await loadFixture(deployRolesFixture);
 
             // Add two DAO members
-            await roles.write.addDAOMember([daoMember.account.address]);
+            await roles.write.addDAOMember([daomember.account.address]);
             await roles.write.addDAOMember([stranger.account.address]);
 
             // Removing one member should succeed
-            await roles.write.removeDAOMember([daoMember.account.address]);
+            await roles.write.removeDAOMember([daomember.account.address]);
 
-            expect(await roles.read.isDAOMember([daoMember.account.address])).to.be.false;
+            // Verify that a DAO member is removed and only one DAO member remains
+            expect(await roles.read.isDAOMember([daomember.account.address])).to.be.false;
             expect(await roles.read.totalDAOMembers()).to.equal(1n);
 
-            // Attempt to remove the last remaining DAO member
+            // Attempt to remove the last remaining DAO member fail
             await expect(
                 roles.write.removeDAOMember([stranger.account.address])
             ).to.be.rejectedWith("Cannot remove last DAO member");
         });
 
-        it("Scenario 51: Revert when removing a non-existent DAO member", async function () 
+        it("Scenario 50: Revert when removing a non-existent DAO member", async function () 
         {
             const { roles, stranger } = await loadFixture(deployRolesFixture);
+            
+            // Attempt to remove account address that is not a DAO member fails
             await expect(
                 roles.write.removeDAOMember([stranger.account.address])
             ).to.be.rejectedWith("Unable to remove, not a DAO member");
         });
 
-        it("Scenario 52: Returns correct DAO member count", async function () 
+        it("Scenario 51: Returns correct DAO member count", async function () 
         {
-            const { roles, daoMember, stranger } = await loadFixture(deployRolesFixture);
-            await roles.write.addDAOMember([daoMember.account.address]);
+            const { roles, daomember, stranger } = await loadFixture(deployRolesFixture);
+            
+            // Add two DAO members
+            await roles.write.addDAOMember([daomember.account.address]);
             await roles.write.addDAOMember([stranger.account.address]);
+            
+            // Verify that the contract returns the correct number of DAO members
             expect(await roles.read.getTotalDAOMembers()).to.equal(2n);
         });
 
-        it("Scenario 53: Revert when user that is not an owner tries to remove DAO member", async function () 
+        it("Scenario 52: Revert when user that is not an owner tries to remove DAO member", async function () 
         {
-            const { roles, daoMember, stranger } = await loadFixture(deployRolesFixture);
+            const { roles, daomember, stranger } = await loadFixture(deployRolesFixture);
 
-            // Owner adds DAO member first
-            await roles.write.addDAOMember([daoMember.account.address]);
+            // Owner adds DAO member
+            await roles.write.addDAOMember([daomember.account.address]);
 
             // Non-owner tries to remove DAO member
-            const rolesAsStranger = await hre.viem.getContractAt("MediTrustRoles", roles.address, {
+            const rolesAsStranger = await hre.viem.getContractAt("MediTrustRoles", roles.address, 
+            {
                 client: { wallet: stranger },
             });
+
+            // DAO member removal fails because only the owner can manage DAO members
             await expect(
-                rolesAsStranger.write.removeDAOMember([daoMember.account.address])
+                rolesAsStranger.write.removeDAOMember([daomember.account.address])
             ).to.be.rejected;
         });
     });

@@ -8,15 +8,16 @@ import { getAddress } from "viem";
 
 describe("MediTrustDAO", function () 
 {
-    
-    const invoicehash = "QmTestInvoiceHashABCDEFG1234567"; // Invoice hash of campaign data
+    const diagnosishash = "diagnosishashABCDEFG1234567"; // IPFS hash of medical diagnosis document
+    const quotationhash = "quotationhashABCDEFG1234567"; // IPFS hash of treatment quotation document
+    const invoicehash = "invoicehashABCDEFG1234567"; // Invoice hash of campaign data
     const target   = 2_000_000_000_000_000_000n; // 2 ETH in wei
     const duration = 30n; // 30 days as default duration
     const claimamount = 500_000_000_000_000_000n; // 0.5 ETH in wei
 
     // Deploy MediTrustRoles, MediTrustCampaign, and MediTrustDAO contracts and prepare test accounts
     async function deployDAOFixture() {
-        const [owner, hospitalRep, patient, dao1, dao2, dao3, fundsAddr, stranger] = await hre.viem.getWalletClients();
+        const [owner, hospitalrep, patient, dao1, dao2, dao3, fundsAddr, stranger] = await hre.viem.getWalletClients();
 
         // Deploy MediTrustRoles contract to manage user roles
         const roles = await hre.viem.deployContract("MediTrustRoles");
@@ -28,7 +29,7 @@ describe("MediTrustDAO", function ()
         const dao = await hre.viem.deployContract("MediTrustDAO", [roles.address, campaign.address]);
 
         // Assign hospital rep role
-        await roles.write.addHospitalRep([hospitalRep.account.address]);
+        await roles.write.addHospitalRep([hospitalrep.account.address]);
 
         // Assign DAO roles to allow them to vote on milestone claims
         await roles.write.addDAOMember([dao1.account.address]);
@@ -41,10 +42,10 @@ describe("MediTrustDAO", function ()
         });
 
         // Patient submits campaign request
-        await campaignAsPatient.write.submitCampaign([target, duration, invoicehash]);
+        await campaignAsPatient.write.submitCampaign([target, duration, diagnosishash, quotationhash]);
 
         const campaignAsRep = await hre.viem.getContractAt("MediTrustCampaign", campaign.address, {
-            client: { wallet: hospitalRep },
+            client: { wallet: hospitalrep },
         });
 
         // Hospital rep approves campaign so it becomes active
@@ -58,7 +59,7 @@ describe("MediTrustDAO", function ()
 
         return {
             roles, campaign, dao,
-            owner, hospitalRep, patient, dao1, dao2, dao3, fundsAddr, stranger,
+            owner, hospitalrep, patient, dao1, dao2, dao3, fundsAddr, stranger,
             publicclient,
         };
     }
@@ -70,7 +71,7 @@ describe("MediTrustDAO", function ()
         {
             client: { wallet: patient },
         });
-        return daoAsPatient.write.submitMilestoneClaim([0n, claimamount, invoiceHash]);
+        return daoAsPatient.write.submitMilestoneClaim([0n, claimamount, invoicehash]);
     }
 
     // Helper function to allow DAO members to vote
