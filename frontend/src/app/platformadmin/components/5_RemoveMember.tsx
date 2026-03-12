@@ -1,8 +1,9 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { Address, isAddress } from 'viem'
 import { print } from '@/utils/toast'
+import { useQueryClient } from '@tanstack/react-query'
 import rolesAbi from '@/abi/MediTrustRoles.json'
 import { rolesContractAddress } from '@/utils/smartContractAddress'
 import { Admin_RemoveUsers, Admin_Caution } from '@/app/images'
@@ -16,6 +17,7 @@ interface RemoveMemberProps {
 export function RemoveMember({ type }: RemoveMemberProps) {
     const [address, setAddress] = useState('')
 
+    const queryClient = useQueryClient()
     const { data: hash, writeContract, isPending } = useWriteContract()
     const { isSuccess } = useWaitForTransactionReceipt({ hash })
 
@@ -37,11 +39,15 @@ export function RemoveMember({ type }: RemoveMemberProps) {
         })
     }
 
-    if (isSuccess) {
-        const memberTypeName = type === 'dao' ? 'DAO Member' : 'Hospital Representative'
-        print(`${memberTypeName} removed successfully!`, 'success')
-        setAddress('')
-    }
+
+    useEffect(() => {
+        if (isSuccess) {
+            queryClient.invalidateQueries()
+            const memberTypeName = type === 'dao' ? 'DAO Member' : 'Hospital Representative'
+            print(`${memberTypeName} removed successfully!`, 'success')
+            setAddress('')
+        }
+    }, [isSuccess])
 
     const config = type === 'dao' ? {
         title: 'Remove DAO Member',

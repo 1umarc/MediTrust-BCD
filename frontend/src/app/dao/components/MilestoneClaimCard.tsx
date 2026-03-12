@@ -1,8 +1,9 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { Address } from 'viem'
 import { print } from '@/utils/toast'
+import { useQueryClient } from '@tanstack/react-query'
 import campaignAbi from '@/abi/MediTrustCampaign.json'
 import { campaignContractAddress } from '@/utils/smartContractAddress'
 
@@ -46,7 +47,7 @@ export function MilestoneClaimCard({ campaignID, claimID}: MilestoneClaimCardPro
         false         // userVote
     ]
 
-
+    const queryClient = useQueryClient()
     const { data: hash, writeContract, isPending } = useWriteContract()
     const { isSuccess } = useWaitForTransactionReceipt({ hash })
 
@@ -68,9 +69,12 @@ export function MilestoneClaimCard({ campaignID, claimID}: MilestoneClaimCardPro
     });
   };
 
-  if (isSuccess) {
-        print('Vote submitted successfully!', 'success')
-  }
+    useEffect(() => {
+        if (isSuccess) {
+            queryClient.invalidateQueries()
+            print('Vote submitted successfully!', 'success')
+        }
+    }, [isSuccess])
 
   // Status badge
   const getStatusBadge = () => {
