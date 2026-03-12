@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import campaignAbi from '@/abi/MediTrustCampaign.json'
 import { campaignContractAddress } from '@/utils/smartContractAddress'
 
-//TODO:Add Explanation?? or comment
+// New Changes : move the useEffect under the 3 hooks before 'if (!campaign) return null'
 interface CampaignReviewCardProps {
     campaignID: number
 }
@@ -16,27 +16,7 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
     const [reason, setRejectionReason] = useState('')
     const [showRejectForm, setShowRejectForm] = useState(false)
 
-        /** TODO: Dummy Data
-    const campaign = 
-    [
-        '0x1234567890abcdef1234567890abcdef12345678',
-        BigInt('2000000000000000000'),                        // 2 ETH
-        BigInt('500000000000000000'),                         // raisedAmount (0.5 ETH)
-        BigInt(Math.floor(Date.now() / 1000) + 86400 * 30),  // 30 days from now
-        'QmPlaceholderHashForCampaignMetadata',
-        0                                                     // 0 = pending
-    ]
-
-    // TODO: Dummy metadata - replace with real IPFS fetch when connected
-    const dummyMetadata = {
-        CampaignTitle: 'Help Sarah Fight Leukemia',
-        campaignImageCid: '/ImageTesting.png',
-        medicalDiagnosisCid: '/TestingPDF1.pdf',
-        treatmentQuotationCid: '/TestingPDF2.pdf',
-    }
-    **/
-
-    // Smart Contract: Fetch campaign data
+    // Fetch campaign data
     const { data: campaign } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
@@ -44,17 +24,24 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
         args: [campaignID]
     })
 
-    const queryClient = useQueryClient()
+    const queryClient = useQueryClient()    // When data changes (approve/reject), it refreshes everything
     const { data: hash, writeContract, isPending } = useWriteContract()
     const { isSuccess } = useWaitForTransactionReceipt({ hash })
 
-    // TODO: Uncomment it when wallet connected
-    if (!campaign) return null
+    useEffect(() => {
+        if (isSuccess) {
+            queryClient.invalidateQueries()
+            print('Campaign status updated successfully!', 'success')
+            setShowRejectForm(false)
+            setRejectionReason('')
+        }
+    }, [isSuccess])
 
-    const [patient, target, raised, duration, diagnosisHash, quotationHash, status] = campaign as any[]
+    if (!campaign) return null      // If 'campaign' is empty , don't show the card"
+
+    const [patient, target, raised, duration, diagnosisHash, quotationHash, status] = campaign as any[] // Takes the array and splits it into separate variables
     
-    // Only show pending campaigns
-    if (status !== 0) return null
+    if (status !== 0) return null // Only show campaigns that are waiting for review (pending)
 
     const expiryDate = new Date(Number(duration) * 1000)
     const raisedEth = parseFloat(formatEther(raised))
@@ -84,23 +71,12 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
         })
     }
 
-    useEffect(() => {
-        if (isSuccess) {
-            queryClient.invalidateQueries()
-            print('Campaign status updated successfully!', 'success')
-            setShowRejectForm(false)
-            setRejectionReason('')
-        }
-    }, [isSuccess])
-
      return (
         <div className="group relative">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
             
             <div className="relative bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
-                {/* Header */}
-                //TODO: Further modify and explanation
-                 {/* ── 1. Campaign Name ─────────────────────── */}
+                 {/* Campaign Name  */}
                 <div className="flex items-start justify-between px-6 pt-6 pb-4">
                     <div>
                         <h3 className="text-lg font-black text-white leading-tight">
@@ -115,7 +91,7 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                     </span>
                 </div>
 
-                {/* ── 2. Campaign Image ────────────────────────────────────── */}
+                {/* Campaign Image */}
                 <div className="px-6 mb-5">
                     <div className="w-full h-44 rounded-xl overflow-hidden border border-slate-700/50 bg-slate-800/50 flex items-center justify-center">
                         <img
@@ -139,7 +115,7 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                     </div>
                 </div>
 
-                {/* ── 3. Raised / Target Amount ────────────────────────────── */}
+                {/* Raised / Target Amount */}
                 <div className="px-6 mb-4">
                     <div className="grid grid-cols-2 gap-3">
                         <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
@@ -167,25 +143,22 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                     </div>
                 </div>
 
-                {/* ── 4. Expires ───────────────────────────────────────────── */}
+                {/* Expires */}
                 <div className="px-6 mb-4">
                     <div className="flex items-center justify-between p-3 bg-slate-800/30 border border-slate-700/50 rounded-xl text-sm">
-                        <span className="text-slate-400 font-semibold">⏰ Expires</span>
+                        <span className="text-slate-400 font-semibold">Expires</span>
                         <span className="text-white font-bold">
                             {expiryDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                     </div>
                 </div>
 
-                {/* ── 5 & 6. Document Download Rows ───────────────────────── */}
+                {/* Document Download Rows */}
                 <div className="px-6 mb-5 space-y-2">
 
                     {/* Medical Diagnosis */}
                     <div className="flex items-center justify-between p-3 bg-slate-800/30 border border-slate-700/50 rounded-xl">
                         <div className="flex items-center gap-2 min-w-0">
-                            <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                            </svg>
                             <span className="text-sm text-slate-300 font-medium truncate">Medical Diagnosis.pdf</span>
                         </div>
                         <a
@@ -193,9 +166,6 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                             download
                             className="flex-shrink-0 ml-3 flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-lg hover:bg-cyan-500/20 transition-all text-xs font-bold"
                         >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
                             Download
                         </a>
                     </div>
@@ -203,9 +173,6 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                     {/* Treatment Quotation */}
                     <div className="flex items-center justify-between p-3 bg-slate-800/30 border border-slate-700/50 rounded-xl">
                         <div className="flex items-center gap-2 min-w-0">
-                            <svg className="w-4 h-4 text-blue-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                            </svg>
                             <span className="text-sm text-slate-300 font-medium truncate">Treatment Quotation.pdf</span>
                         </div>
                         <a
@@ -213,15 +180,12 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                             download
                             className="flex-shrink-0 ml-3 flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-lg hover:bg-cyan-500/20 transition-all text-xs font-bold"
                         >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
                             Download
                         </a>
                     </div>
                 </div>
 
-                {/* ── 7. Action Buttons ────────────────────────────────────── */}
+                {/* Action Buttons */}
                 <div className="px-6 pb-6">
                     {!showRejectForm ? (
                         <div className="grid grid-cols-2 gap-3">
@@ -230,14 +194,14 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                                 disabled={isPending}
                                 className="px-4 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-bold hover:from-red-400 hover:to-pink-500 disabled:opacity-50 transition-all text-sm shadow-lg shadow-red-500/20"
                             >
-                                ✕ Reject
+                                Reject
                             </button>
                             <button
                                 onClick={handleApprove}
                                 disabled={isPending}
                                 className="px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold hover:from-emerald-400 hover:to-teal-500 disabled:opacity-50 transition-all text-sm shadow-lg shadow-emerald-500/20"
                             >
-                                {isPending ? 'Processing...' : '✓ Approve'}
+                                {isPending ? 'Processing...' : ' Approve'}
                             </button>
                         </div>
                     ) : (

@@ -96,15 +96,14 @@ export function CreataCampaignForm()
             console.log("Quotation CID:", quotationHash)
 
             const saved = await saveToDB("campaigndetails", {
-              campaignid: 1,
+              campaignid: 4000,
               patient: formData.CreatorName,
-              duration: formData.CampaignDuration,
               title: formData.CampaignTitle,
               description: formData.CampaignDescription,
+              duration: formData.CampaignDuration,
               reason: formData.CampaignDescription,
-              termsaccepted: formData.TermsAccepted,
               imagehash: bannerHash
-              })
+            });
 
             console.log("Saved record:", saved.record);
 
