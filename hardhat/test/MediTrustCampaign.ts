@@ -9,7 +9,8 @@ import { getAddress } from "viem";
 describe("MediTrustCampaign", function () 
 {
     // Fixture used to deploy contracts and reuse the same setup across tests
-    const ipfshash = "QmTestIpfsHashABCDEFG1234567";
+    const diagnosisHash = "QmTestDiagnosisHashABCDEFG1234567";
+    const quotationHash = "QmTestQuotationHashABCDEFG1234567";
     const target = 1_000_000_000_000_000_000n; // 1 ETH in wei
     const duration = 30n;                      // 30 days as default duration
 
@@ -39,7 +40,7 @@ describe("MediTrustCampaign", function ()
         const campaignAsPatient = await hre.viem.getContractAt("MediTrustCampaign", campaign.address, {
             client: { wallet: patient },
         });
-        return campaignAsPatient.write.submitCampaign([target, duration, ipfshash]);
+        return campaignAsPatient.write.submitCampaign([target, duration, diagnosisHash, quotationHash]);
     }
 
     // ─── Deployment ───────────────────────────────────────────────────────────
@@ -70,7 +71,7 @@ describe("MediTrustCampaign", function ()
             expect(await campaign.read.campaignCount()).to.equal(1n);
 
             // Retrive campaign details from contract
-            const [patientaddr, target, raised, duration, ipfshash, status] =
+            const [patientaddr, target, raised, duration, diagnosisHash, quotationHash, status] =
                 await campaign.read.getCampaign([0n]);
 
             // Confirm that the campaign details were stored correctly after submission
@@ -78,7 +79,8 @@ describe("MediTrustCampaign", function ()
             expect(target).to.equal(target);
             expect(raised).to.equal(0n);
             expect(duration).to.equal(duration);
-            expect(ipfshash).to.equal(ipfshash);
+            expect(diagnosisHash).to.equal(diagnosisHash);
+            expect(quotationHash).to.equal(quotationHash);
             expect(status).to.equal(0); // Pending
         });
 
@@ -97,23 +99,27 @@ describe("MediTrustCampaign", function ()
             
             // Target amount is set to zero
             await expect(
-                campaignAsPatient.write.submitCampaign([0n, duration, ipfshash])
+                campaignAsPatient.write.submitCampaign([0n, duration, diagnosisHash, quotationHash])
             ).to.be.rejectedWith("Try again, invalid target amount");
 
             // Duration is set to zero days
             await expect(
-                campaignAsPatient.write.submitCampaign([target, 0n, ipfshash])
+                campaignAsPatient.write.submitCampaign([target, 0n, diagnosisHash, quotationHash])
             ).to.be.rejectedWith("Try again, invalid duration");
 
             // Duration is set above 365 days 
             await expect(
-                campaignAsPatient.write.submitCampaign([target, 366n, ipfshash])
+                campaignAsPatient.write.submitCampaign([target, 366n, diagnosisHash, quotationHash])
             ).to.be.rejectedWith("Try again, invalid duration");
 
             // Campaign submission has no IPFS hash
             await expect(
-                campaignAsPatient.write.submitCampaign([target, duration, ""])
-            ).to.be.rejectedWith("Try again, IPFS hash required");
+                campaignAsPatient.write.submitCampaign([target, duration, "", quotationHash])
+            ).to.be.rejectedWith("Try again, diagnosis hash required");
+
+            await expect(
+                campaignAsPatient.write.submitCampaign([target, duration, diagnosisHash, ""])
+            ).to.be.rejectedWith("Try again, quotation hash required");
         });
     });
 
