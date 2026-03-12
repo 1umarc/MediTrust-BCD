@@ -1,4 +1,4 @@
-// IPFS Imports - Pinata
+// IPFS is configured using Pinata
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -11,52 +11,55 @@ app.use(express.json());
 
 const upload = multer();
 
-
-// Database Imports - PostgreSQL
+// PostgreSQL database is configured
 import { Pool } from "pg";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
 
-/**
- * PostgreSQL 
- */
-// 1. Database Connection
+// PostgreSQL Database Setup
+
+// Create connection pool for database
 const pool = new Pool
 ({
   connectionString: process.env.POSTGRES_URL
 });
 
-// 2. Get Schema - no need to do psql -U postgres -d meditrust_schema -f schema.sql   
-const schemaPath = path.join(__dirname, "schema.sql");
-const schema = fs.readFileSync(schemaPath, "utf8");
+// Get Meditrust Schema   
+const schemapath = path.join(dirname, "schema.sql");
+const schema = fs.readFileSync(schemapath, "utf8");
 
-// 3. Initialize Database - no need to do createdb -U postgres meditrust_schema 
+// Database is initialized
 pool.connect()
-    .then(() => {
-        console.log("PostgreSQL connected");
+    .then(() => 
+    {
+        console.log("PostgreSQL is connected");
         console.log(schema);
 
         return pool.query(schema);
     })
 
-    .then(() => {
-        console.log("Schema loaded");
+    .then(() => 
+    {
+        console.log("Meditrust Schema File is loaded");
     })
 
-    .catch((error) => {
-        console.error("Database initialization error:", error);
+    .catch((error) => 
+    {
+        console.error("Error in initializing database:", error);
     });
 
 
-// 4. For Frontend - Database API
+// Database API For Frontend
+
+// Save data from frontend into database table(s)
 app.post("/api/db/save", async (req, res) => {
     try 
     {
-        const { table, data } = req.body; // table = 'campaigndetails', data = { field1: value1, ... }
+        const { table, data } = req.body; // table = 'tablename', data = { field1: value1, ... }
 
         const columns = Object.keys(data).join(", ");
         const placeholders = Object.keys(data).map((_, i) => `$${i + 1}`).join(", ");
@@ -70,11 +73,12 @@ app.post("/api/db/save", async (req, res) => {
     } 
     catch (error) 
     {
-        console.error("Save error:", error);
-        res.status(500).json({ success: false, error: "Database insert failed" });
+        console.error("Error in saving data to database:", error);
+        res.status(500).json({ success: false, error: "Failed to save data to database" });
     }
 });
 
+// Obtain data from database table(s)
 app.post("/api/db/get", async (req, res) => {
     try 
     {
@@ -84,27 +88,27 @@ app.post("/api/db/get", async (req, res) => {
     } 
     catch (error) 
     {
-        console.error("Fetch error:", error);
-        res.status(500).json({ error: "Database fetch failed" });
+        console.error("Error in retrieving data from database:", error);
+        res.status(500).json({ error: "Failed to retrieve data from database" });
     }
 });
 
 
-/**
- * IPFS
- */
-// For Frontend - IPFS API
-app.post("/api/ipfs/upload", upload.single("file"), async (request, response) => { // Multer gives req.file.buffer and req.file.originalname
+// IPFS Upload Route
+
+// Handles file uploads from frontend and stores them on IPFS using Pinata
+app.post("/api/ipfs/upload", upload.single("file"), async (request, response) => 
+{ // Multer makes the uploaded file available via req.file.buffer and req.file.originalname
     try 
     {
-        // IPFS upload logic directly in the route
-        const FormData = (await import("form-data")).default;
+        // Handles IPFS upload using Pinata API
+        const formdata = (await import("form-data")).default;
         const axios = (await import("axios")).default;
 
-        const data = new FormData();
+        const data = new formdata();
         data.append("file", request.file.buffer, { filename: request.file.originalname });
 
-        const axiosResponse = await axios.post
+        const axiosresponse = await axios.post
         (
             "https://api.pinata.cloud/pinning/pinFileToIPFS",
             data,
@@ -117,17 +121,17 @@ app.post("/api/ipfs/upload", upload.single("file"), async (request, response) =>
                 }
             }
         );
-        response.json({ cid: axiosResponse.data.IpfsHash });
+        response.json({ cid: axiosresponse.data.IpfsHash });
     } 
     catch (err) 
     {
-        console.error("IPFS upload failed:", err.message);
-        response.status(500).json({ error: "IPFS upload failed" });
+        console.error("Failed to upload file to IPFS:", err.message);
+        response.status(500).json({ error: "Unable to upload file to IPFS" });
     }
 });
 
 
-// Backend Server Start
+// Backend Server Starts
 app.listen(5000, () =>
 {
   console.log("Backend running on http://localhost:5000");
