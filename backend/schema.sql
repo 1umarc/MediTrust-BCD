@@ -5,8 +5,8 @@ CREATE TABLE IF NOT EXISTS campaigndetails
     title TEXT NOT NULL,
     description TEXT NOT NULL,
     duration INTEGER NOT NULL,
-    reason TEXT NOT NULL,
-    imagehash TEXT
+    imagehash TEXT,
+    reason TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS milestoneclaimdetails 
@@ -15,12 +15,3 @@ CREATE TABLE IF NOT EXISTS milestoneclaimdetails
     campaignid INTEGER REFERENCES campaigndetails(campaignid),
     description TEXT
 );
-
--- CREATE TABLE IF NOT EXISTS userstats 
--- (
---     useraddr TEXT PRIMARY KEY,
---     totalraised NUMERIC DEFAULT 0 NOT NULL,
---     activecampaigns INTEGER DEFAULT 0 NOT NULL,
---     totalsupporters INTEGER DEFAULT 0 NOT NULL,
---     totalcampaigns INTEGER DEFAULT 0 NOT NULL
--- );

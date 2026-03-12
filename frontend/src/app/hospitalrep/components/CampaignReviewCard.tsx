@@ -3,25 +3,33 @@ import { useState, useEffect } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { Address, formatEther } from 'viem'
 import { print } from '@/utils/toast'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
 import campaignAbi from '@/abi/MediTrustCampaign.json'
 import { campaignContractAddress } from '@/utils/smartContractAddress'
+import { getFromDB } from '@/utils/dbconfig'
+import { getFromIPFS } from '@/utils/ipfsconfig'
 
 // New Changes : move the useEffect under the 3 hooks before 'if (!campaign) return null'
 interface CampaignReviewCardProps {
-    campaignID: number
+    campaignID: 1 //FIXME: CampaignID
 }
 
 export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
     const [reason, setRejectionReason] = useState('')
     const [showRejectForm, setShowRejectForm] = useState(false)
 
-    // Fetch campaign data
+    // Fetch campaign data from contract
     const { data: campaign } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
         functionName: 'getCampaign',
         args: [campaignID]
+    })
+ 
+    // Fetch campaign data from DB
+    const { data: campaignDetails, } = useQuery({
+    queryKey: ['campaigndetails'],     // array identifying the query
+    queryFn: () => getFromDB('campaigndetails'),  // function returning a Promise
     })
 
     const queryClient = useQueryClient()    // When data changes (approve/reject), it refreshes everything
@@ -67,7 +75,7 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
             address: campaignContractAddress as Address,
             abi: campaignAbi.abi,
             functionName: 'rejectCampaign',
-            args: [campaignID, reason]
+            args: [campaignID]
         })
     }
 
@@ -80,7 +88,7 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                 <div className="flex items-start justify-between px-6 pt-6 pb-4">
                     <div>
                         <h3 className="text-lg font-black text-white leading-tight">
-                            {/* {campaignTitle ?? metadata?.CampaignTitle ?? '—'} */}
+                            {campaignDetails[campaignID].title}
                         </h3>
                         <p className="text-xs text-slate-500 font-mono mt-1">
                             {patient.slice(0, 6)}...{patient.slice(-4)}
@@ -95,7 +103,7 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                 <div className="px-6 mb-5">
                     <div className="w-full h-44 rounded-xl overflow-hidden border border-slate-700/50 bg-slate-800/50 flex items-center justify-center">
                         <img
-                            // src={`${dummyMetadata.campaignImageCid}`}
+                            src={ getFromIPFS(campaignDetails[campaignID].imagehash) }
                             alt="Campaign"
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -120,11 +128,11 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                     <div className="grid grid-cols-2 gap-3">
                         <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
                             <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Raised</div>
-                            <div className="text-xl font-black text-emerald-400">{raisedEth} ETH</div>
+                            <div className="text-xl font-black text-emerald-400">{raisedEth} HETH</div>
                         </div>
                         <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
                             <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Target</div>
-                            <div className="text-xl font-black text-cyan-400">{targetEth} ETH</div>
+                            <div className="text-xl font-black text-cyan-400">{targetEth} HETH</div>
                         </div>
                     </div>
 
@@ -137,7 +145,7 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                         <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
                             <div
                                 className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 rounded-full transition-all"
-                                // style={{ width: `${progressPercent}%` }}
+                                style={{ width: `${progressPercent}%` }}
                             />
                         </div>
                     </div>
@@ -162,7 +170,7 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                             <span className="text-sm text-slate-300 font-medium truncate">Medical Diagnosis.pdf</span>
                         </div>
                         <a
-                            // href={`${dummyMetadata.medicalDiagnosisCid}`}
+                            href={ getFromIPFS(diagnosisHash) }
                             download
                             className="flex-shrink-0 ml-3 flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-lg hover:bg-cyan-500/20 transition-all text-xs font-bold"
                         >
@@ -176,7 +184,7 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                             <span className="text-sm text-slate-300 font-medium truncate">Treatment Quotation.pdf</span>
                         </div>
                         <a
-                            // href={`${dummyMetadata.treatmentQuotationCid}`}
+                            href={ getFromIPFS(quotationHash) }
                             download
                             className="flex-shrink-0 ml-3 flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-lg hover:bg-cyan-500/20 transition-all text-xs font-bold"
                         >
@@ -231,7 +239,6 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                         </div>
                     )}
                 </div>
-
             </div>
         </div>
     )

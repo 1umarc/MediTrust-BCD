@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { parseEther, Address } from 'viem'
 import { print } from '@/utils/toast'
 import campaignAbi from '@/abi/MediTrustCampaign.json'
@@ -43,6 +43,13 @@ export function CreataCampaignForm()
         CampaignDuration: '',
         TermsAccepted: false,
     })
+
+    // const { data: campaignCount } = useReadContract({
+    //   address: campaignContractAddress as Address,
+    //   abi: campaignAbi.abi,
+    //   functionName: 'campaignCount'
+    // }) as { data: Number }
+    let campaignCount = 1 //FIX ME: change to contract func
 
     const { data: hash, writeContract } = useWriteContract()
     const { isSuccess } = useWaitForTransactionReceipt({ hash })
@@ -88,30 +95,27 @@ export function CreataCampaignForm()
         try {
             setUploading(true)
             
-            const bannerHash = await saveToIPFS(formData.CampaignImage)
+            const imageHash = await saveToIPFS(formData.CampaignImage)
             const diagnosisHash = await saveToIPFS(formData.MedicalDiagnosis)
             const quotationHash = await saveToIPFS(formData.TreatmentQuotation)
-            console.log("Campaign Image CID:", bannerHash)
-            console.log("Medical File CID:", diagnosisHash)
-            console.log("Quotation CID:", quotationHash)
 
-            const saved = await saveToDB("campaigndetails", {
-              campaignid: 4000,
+            const campaignDetails = await saveToDB("campaigndetails", 
+            {
+              campaignid: campaignCount++,
               patient: formData.CreatorName,
               title: formData.CampaignTitle,
               description: formData.CampaignDescription,
               duration: formData.CampaignDuration,
-              reason: formData.CampaignDescription,
-              imagehash: bannerHash
+              imagehash: imageHash,
+              reason: "not yet"
             });
 
-            console.log("Saved record:", saved.record);
+            //XXX: remove log
+            console.log("Image saved to IPFS:", imageHash);
+            console.log("Diagnosis saved to IPFS:", diagnosisHash);
+            console.log("Quotation saved to IPFS:", quotationHash);
+            console.log("Saved record:", campaignDetails.record);
 
-            // Fetch all campaigns
-            // const campaigns = await getFromDB("campaigndetails");
-            // bannerHash = campaigns[2].imagehash;
-            // console.log(campaigns);
-            
             writeContract
             ({
                 address: campaignContractAddress as Address,
