@@ -15,3 +15,8 @@ CREATE TABLE IF NOT EXISTS milestoneclaimdetails
     campaignid INTEGER REFERENCES campaigndetails(campaignid),
     description TEXT
 );
+
+CREATE TABLE IF NOT EXISTS reviewdetails (
+    campaignid INTEGER PRIMARY KEY REFERENCES campaigndetails(campaignid),
+    reason TEXT NOT NULL
+);

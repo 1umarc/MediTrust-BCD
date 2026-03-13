@@ -108,10 +108,8 @@ export function CreataCampaignForm()
               description: formData.CampaignDescription,
               duration: formData.CampaignDuration,
               imagehash: imageHash,
-              reason: ""
             });
 
-            //XXX: remove log
             console.log("Image saved to IPFS:", imageHash);
             console.log("Diagnosis saved to IPFS:", diagnosisHash);
             console.log("Quotation saved to IPFS:", quotationHash);
@@ -124,9 +122,6 @@ export function CreataCampaignForm()
                 functionName: 'submitCampaign',
                 args: [parseEther(formData.TargetAmount), parseInt(formData.CampaignDuration), diagnosisHash, quotationHash]
             })
-
-            // TODO: Set the submitted state to true immediately for testing purpose
-            setSubmitted(true)
         } catch (error) 
 
         {

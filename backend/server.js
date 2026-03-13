@@ -56,6 +56,7 @@ pool.connect()
         (`
             DROP TABLE IF EXISTS milestoneclaimdetails CASCADE;
             DROP TABLE IF EXISTS campaigndetails CASCADE;
+            DROP TABLE IF EXISTS reviewdetails CASCADE;
         `);
     })
     .then(() => 
