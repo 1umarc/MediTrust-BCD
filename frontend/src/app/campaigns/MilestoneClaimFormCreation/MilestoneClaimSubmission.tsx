@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
-interface CampaignSubmissionSuccess {
+interface MilestonClaimInfo {
     formData: {
         CampaignDescription: string
         MilestoneClaim: File | null
@@ -10,7 +10,7 @@ interface CampaignSubmissionSuccess {
     }
 }
 
-export function MilestoneClaimSubmission({ formData = { CampaignDescription: '', MilestoneClaim: null, TargetAmount: '' } }: CampaignSubmissionSuccess) {
+export function MilestoneClaimSubmission({ formData = { CampaignDescription: '', MilestoneClaim: null, TargetAmount: '' } }: MilestonClaimInfo) {
     const [mounted, setMounted] = useState(false)
     const [checkVisible, setCheckVisible] = useState(false)
     const [contentVisible, setContentVisible] = useState(false)
