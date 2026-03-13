@@ -1,23 +1,30 @@
 'use client'
 import React, { useState } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useReadContract } from 'wagmi'
+import { formatEther, Address } from 'viem'
 import { User, MoneyIcon } from '@/app/images'
+import fundsAbi from '@/abi/MediTrustFunds.json'
+import { fundsContractAddress } from '@/utils/smartContractAddress'
 
 export function ProfileCard() {
   const { address } = useAccount()
   const [copied, setCopied] = useState(false)
-
-  const truncateAddress = (addr: string) => {
+  const truncateAddress = (addr: string) => 
+  {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`
   }
 
-  const copyToClipboard = () => {
-    if (address) {
-      navigator.clipboard.writeText(address)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
-  }
+  // Call getTotalReceived(patient) — returns sum of all executed claim amounts in wei
+  const { data: totalWei } = useReadContract
+  ({
+    address: fundsContractAddress as Address,
+    abi: fundsAbi.abi,
+    functionName: 'getTotalReceived',
+    args: [address],
+    query: { enabled: !!address } // only call when wallet is connected
+  })
+
+  const totalReceivedEth = totalWei ? parseFloat(formatEther(totalWei as bigint)) : 0
 
   return (
     <div className="relative group">
@@ -62,7 +69,7 @@ export function ProfileCard() {
 
               {/* Value */}
               <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-3">
-                HETH 0
+                {totalReceivedEth} HETH  
               </div>
 
               {/* Progress bar */}
