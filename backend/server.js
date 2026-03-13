@@ -50,12 +50,20 @@ pool.connect()
     .then(() => 
     {
         console.log("PostgreSQL is connected");
-        console.log(schema);
 
+        // Drop old tables
+        return pool.query
+        (`
+            DROP TABLE IF EXISTS milestoneclaimdetails CASCADE;
+            DROP TABLE IF EXISTS campaigndetails CASCADE;
+        `);
+    })
+    .then(() => 
+    {
         // Create tables from schema file
+        console.log(schema);
         return pool.query(schema);
     })
-
     .then(() => 
     {
         console.log("Meditrust Schema File is loaded");

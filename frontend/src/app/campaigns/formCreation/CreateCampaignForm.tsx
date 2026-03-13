@@ -44,12 +44,13 @@ export function CreataCampaignForm()
         TermsAccepted: false,
     })
 
-    // const { data: campaignCount } = useReadContract({
-    //   address: campaignContractAddress as Address,
-    //   abi: campaignAbi.abi,
-    //   functionName: 'campaignCount'
-    // }) as { data: Number }
-    let campaignCount = 1 //FIX ME: change to contract func
+    // Get campaign count
+    const { data: campaignCount } = useReadContract({
+        address: campaignContractAddress as Address,
+        abi: campaignAbi.abi,
+        functionName: 'campaignCount'
+    })
+    const campaignID = Number(campaignCount)
 
     const { data: hash, writeContract } = useWriteContract()
     const { isSuccess } = useWaitForTransactionReceipt({ hash })
@@ -101,13 +102,13 @@ export function CreataCampaignForm()
 
             const campaignDetails = await saveToDB("campaigndetails", 
             {
-              campaignid: campaignCount++,
+              campaignid: campaignID,
               patient: formData.CreatorName,
               title: formData.CampaignTitle,
               description: formData.CampaignDescription,
               duration: formData.CampaignDuration,
               imagehash: imageHash,
-              reason: "not yet"
+              reason: ""
             });
 
             //XXX: remove log
