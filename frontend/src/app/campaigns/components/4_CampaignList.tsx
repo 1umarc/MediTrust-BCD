@@ -17,51 +17,54 @@ export function CampaignList() {
     // ========================================
 
     // Get all campaign IDs
-    const { data: allCampaignIdsData } = useReadContract({
+    const { data: allCampaignIDsData } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
-        functionName: 'getAllCampaignIds'
+        functionName: 'getAllCampaignIDs'
     })
 
     // Get pending campaign IDs
-    const { data: pendingIdsData } = useReadContract({
+    const { data: pendingIDsData } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
-        functionName: 'getPendingCampaignIds'
+        functionName: 'getCampaignIDs', 
+        args: [0]   // 0 = CampaignStatus.Pending
     })
 
     // Get approved campaign IDs
-    const { data: approvedIdsData } = useReadContract({
+    const { data: approvedIDsData } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
-        functionName: 'getApprovedCampaignIds'
+        functionName: 'getCampaignIDs',
+        args: [1]   // 1 = CampaignStatus.Approved
     })
 
     // Get completed campaign IDs
-    const { data: completedIdsData } = useReadContract({
+    const { data: completedIDsData } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
-        functionName: 'getCompletedCampaignIds'
+        functionName: 'getCampaignIDs',
+        args: [3]   // 3 = CampaignStatus.Completed
     })
 
     // ========================================
     // CONVERT TO JAVASCRIPT ARRAYS
     // ========================================
 
-    const allCampaignIds = allCampaignIdsData 
-        ? (allCampaignIdsData as bigint[]).map(id => Number(id))
+    const allCampaignIDs = allCampaignIDsData 
+        ? (allCampaignIDsData as bigint[]).map(id => Number(id))
         : []
     
-    const pendingIds = pendingIdsData
-        ? (pendingIdsData as bigint[]).map(id => Number(id))
+    const pendingIDs = pendingIDsData
+        ? (pendingIDsData as bigint[]).map(id => Number(id))
         : []
     
-    const approvedIds = approvedIdsData
-        ? (approvedIdsData as bigint[]).map(id => Number(id))
+    const approvedIDs = approvedIDsData
+        ? (approvedIDsData as bigint[]).map(id => Number(id))
         : []
     
-    const completedIds = completedIdsData
-        ? (completedIdsData as bigint[]).map(id => Number(id))
+    const completedIDs = completedIDsData
+        ? (completedIDsData as bigint[]).map(id => Number(id))
         : []
 
     // ========================================
@@ -71,27 +74,27 @@ export function CampaignList() {
     const getFilteredCampaigns = () => {
         switch (activeFilter) {
             case 'pending':
-                return pendingIds
+                return pendingIDs
             case 'approved':
-                return approvedIds
+                return approvedIDs
             case 'completed':
-                return completedIds
+                return completedIDs
             default: // 'all'
-                return allCampaignIds
+                return allCampaignIDs
         }
     }
 
-    const filteredCampaignIds = getFilteredCampaigns()
+    const filteredCampaignIDs = getFilteredCampaigns()
 
     // ========================================
     // CALCULATE COUNTS FOR FILTERS
     // ========================================
 
     const campaignCounts = {
-        all: allCampaignIds.length,
-        pending: pendingIds.length,
-        approved: approvedIds.length,
-        completed: completedIds.length
+        all: allCampaignIDs.length,
+        pending: pendingIDs.length,
+        approved: approvedIDs.length,
+        completed: completedIDs.length
     }
 
     return (
@@ -104,9 +107,9 @@ export function CampaignList() {
             />
 
             {/* TODO: Show Campaign Cards - replace with actual data */}
-            {filteredCampaignIds.length > 0 ? (
+            {filteredCampaignIDs.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredCampaignIds.map((campaignID) => (
+                    {filteredCampaignIDs.map((campaignID) => (
                         <CampaignCard key={campaignID} campaignID={campaignID} />
                     ))}
                 </div>

@@ -56,7 +56,7 @@ contract MediTrustCampaign
     event CampaignComplete(uint256 indexed campaignID); // XXX: not used
         
     // * Campaign Actions * //
-    function submitCampaign(uint256 target, uint256 duration, string memory diagnosisHash, string memory quotationHash) external returns (uint256) 
+    function submitCampaign(uint256 target, uint256 duration, string memory diagnosisHash, string memory quotationHash) external
     {
         // Error checking for target amount, duration, and IPFS hash
         require(target > 0, "Try again, invalid target amount");
@@ -79,7 +79,6 @@ contract MediTrustCampaign
         newCampaign.startDate = block.timestamp;
 
         emit CampaignSubmit(campaignID, msg.sender, target, diagnosisHash, quotationHash); // Trigger event
-        return campaignID;
     }
 
     function approveCampaign(uint256 campaignID) external 
@@ -145,6 +144,19 @@ contract MediTrustCampaign
             emit CampaignComplete(campaignID);
         }
     }
+
+    // Retrive raised amount
+    function getTotalRaised() external view returns (uint256) 
+    {
+        uint256 total = 0;
+        
+        for (uint256 i = 0; i <= campaignCount; i++) 
+        {
+            total += campaigns[i].raised;
+        }
+    
+        return total;
+    }
     
     // Retrive campaign and check if active
     function isCampaignActive(uint256 campaignID) external view returns (bool) 
@@ -159,11 +171,12 @@ contract MediTrustCampaign
         return msg.sender == campaigns[campaignID].patient;
     }
 
-    function getCampaignCount(CampaignStatus status) external view returns (uint256) 
+    // Retrive campaign count for a specific status
+    function getCampaignCount(CampaignStatus status) public view returns (uint256) 
     {
         uint256 count = 0;
 
-        for (uint256 i = 0; i < campaignCount; i++) 
+        for (uint256 i = 0; i <= campaignCount; i++) 
         {
             if (campaigns[i].status == status) 
             {
@@ -174,82 +187,35 @@ contract MediTrustCampaign
         return count;
     }
 
-    function getTotalRaised() external view returns (uint256) 
+    // Retrive campaign IDs for a specific status
+    function getCampaignIDs(CampaignStatus status) external view returns (uint256[] memory) 
     {
-        uint256 total = 0;
-        
+        // Allocate array
+        uint256[] memory IDs = new uint256[](getCampaignCount(status));
+
+        // Fill array
+        uint256 index = 0;
         for (uint256 i = 0; i < campaignCount; i++) 
         {
-            total += campaigns[i].raised;
-        }
-    
-        return total;
-    }
-
-
-
-    // Add these to MediTrustCampaign.sol (after getTotalRaised)
-
-    function getAllCampaignIds() external view returns (uint256[] memory) {
-        uint256[] memory ids = new uint256[](campaignCount);
-        for (uint256 i = 0; i < campaignCount; i++) {
-            ids[i] = i;
-        }
-        return ids;
-    }
-
-    function getPendingCampaignIds() external view returns (uint256[] memory) {
-        uint256 count = 0;
-        for (uint256 i = 0; i < campaignCount; i++) {
-            if (campaigns[i].status == CampaignStatus.Pending) count++;
-        }
-        
-        uint256[] memory ids = new uint256[](count);
-        uint256 index = 0;
-        for (uint256 i = 0; i < campaignCount; i++) {
-            if (campaigns[i].status == CampaignStatus.Pending) {
-                ids[index] = i;
+            if (campaigns[i].status == status) 
+            {
+                IDs[index] = i;
                 index++;
             }
         }
-        return ids;
+
+        return IDs;
     }
 
-    function getApprovedCampaignIds() external view returns (uint256[] memory) {
-        uint256 count = 0;
-        for (uint256 i = 0; i < campaignCount; i++) {
-            if (campaigns[i].status == CampaignStatus.Approved) count++;
+    // Retrive all campaign IDs
+    function getAllCampaignIDs() external view returns (uint256[] memory) 
+    {
+        uint256[] memory IDs = new uint256[](campaignCount);
+
+        for (uint256 i = 0; i < campaignCount; i++) 
+        {
+            IDs[i] = i;
         }
-        
-        uint256[] memory ids = new uint256[](count);
-        uint256 index = 0;
-        for (uint256 i = 0; i < campaignCount; i++) {
-            if (campaigns[i].status == CampaignStatus.Approved) {
-                ids[index] = i;
-                index++;
-            }
-        }
-        return ids;
+        return IDs;
     }
-
-    function getCompletedCampaignIds() external view returns (uint256[] memory) {
-        uint256 count = 0;
-        for (uint256 i = 0; i < campaignCount; i++) {
-            if (campaigns[i].status == CampaignStatus.Completed) count++;
-        }
-        
-        uint256[] memory ids = new uint256[](count);
-        uint256 index = 0;
-        for (uint256 i = 0; i < campaignCount; i++) {
-            if (campaigns[i].status == CampaignStatus.Completed) {
-                ids[index] = i;
-                index++;
-            }
-        }
-        return ids;
-    }
-
-
-
-
 }
