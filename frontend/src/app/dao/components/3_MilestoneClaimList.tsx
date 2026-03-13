@@ -13,11 +13,6 @@ type FilterType = 'pending' | 'approved' | 'all'
 export function MilestoneClaimList() {
     const [activeFilter, setActiveFilter] = useState<FilterType>('pending')
 
-    // ========================================
-    // FETCH MILESTONE CLAIM IDS FROM SMART CONTRACT
-    // ALL HOOKS AT TOP LEVEL - NO LOOPS!
-    // ========================================
-
     // Get pending milestone claim IDs
     const { data: pendingClaimIDsData } = useReadContract({
         address: DAOContractAddress as Address,
@@ -41,10 +36,7 @@ export function MilestoneClaimList() {
         functionName: 'getAllMilestoneClaimIDs'
     })
 
-    // ========================================
-    // CONVERT TO JAVASCRIPT ARRAYS
-    // ========================================
-
+    // Convert to Javascript Arrays
     const pendingIDs = pendingClaimIDsData
         ? (pendingClaimIDsData as bigint[]).map(id => Number(id))
         : []
@@ -57,29 +49,20 @@ export function MilestoneClaimList() {
         ? (allClaimIDsData as bigint[]).map(id => Number(id))
         : []
 
-    // ========================================
-    // CALCULATE COUNTS FOR FILTERS
-    // ========================================
-
+    // Calculate Counts for Filters Cal
     const claimCounts = {
         pending: pendingIDs.length,
         approved: approvedIDs.length,
         all: allIDs.length
     }
 
-    // ========================================
-    // FILTER BASED ON ACTIVE FILTER
-    // ========================================
-
+    // Filter based on Active Filter
     const filteredClaimIDs =
         activeFilter === 'pending' ? pendingIDs :
         activeFilter === 'approved' ? approvedIDs :
         allIDs
 
-    // ========================================
-    // FILTER BUTTONS
-    // ========================================
-
+    // Filter Buttons
     const filters: { id: FilterType; label: string; icon: string }[] = 
     [
         { 
