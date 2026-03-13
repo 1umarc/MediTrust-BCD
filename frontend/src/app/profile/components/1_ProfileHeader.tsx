@@ -109,58 +109,6 @@ export function ProfileHeader() {
             Manage your campaigns and build your impact
           </p>
         </div>
-        
-        {/* Quick stats pills */}
-        <div className="flex flex-wrap gap-3 mt-6">
-        {/*
-        flex : flexbox
-        flex-wrap : if screen is small,  allow the items to wrap to the next line
-        mt-6 : margin top (adds space above the pills) 
-        */}
-          {stats.map((stat, index) => (
-            /* go through each item in stats, create UI for each one */
-            <div
-              key={index} /* track each item */
-              className={`group/pill relative px-4 py-2 bg-slate-900/50 border ${stat.borderColor} ${stat.hoverBorderColor} rounded-full transition-all`}
-              /*
-              group/pill -> this is parent
-              -> this creates a group container named 'pill' 
-              -> means that child elements inside this container can react when the parent is hovered
-              -> Parent container -> control children effects
-
-              px-4 : padding left and right 
-              py-2 : padding top and bottom
-              bg-slate-900/50 : dark background with transparency
-              border : adds border
-              */
-            >
-              <div
-                className={`absolute inset-0 bg-gradient-to-r ${stat.gradient} opacity-0 group-hover/pill:opacity-100 transition-opacity`}
-                /* 
-                group-hover/pill -> this is child 
-                -> when the parent (group/pill) is hovered, apply this style 
-                -> so it means hover the pill -> child element changes
-
-                opacity-0 : invisible
-                group-hover/pill:opacity-100 : when parent is hovered, make it fully visible
-                */
-              ></div>
-
-              <div className="relative flex items-center gap-2">
-                <div
-                 /* Dot Indicator*/
-                  className={`w-2 h-2 ${stat.dotColor} rounded-full ${ /* w-2 h-2 : small circle, rounded-full : pill shape , stat.dotColor : color from const stats */
-                    stat.pulse ? "animate-pulse" : ""
-                  }`}
-                ></div>
-
-                <span className="text-sm font-bold text-slate-300">
-                  <span className={stat.textColor}>{stat.value}</span> {stat.label}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   )

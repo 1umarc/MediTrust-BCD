@@ -150,7 +150,7 @@ export function MyCampaign()
         <div className="relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 rounded-3xl blur opacity-10 group-hover:opacity-20 transition duration-1000" />
 
-            <div className="relative bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8">
+            <div className="relative bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 min-h-[500px]">
 
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">

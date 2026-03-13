@@ -12,7 +12,13 @@ export default function ProfilePage() {
     {/* TODO: remember to change back this , if wallet is connected then only show profile dashboard else wallet connection warning*/}
     // If wallet IS connected, show the profile dashboard
     if (isConnected) {
-        return <ProfileDashboard />
+        return (
+          <div className="relative min-h-screen">
+            <main className="flex-grow pt-20">
+                <ProfileDashboard />
+            </main>
+          </div>
+        )
     }
 
   return (
