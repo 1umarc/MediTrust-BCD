@@ -53,22 +53,7 @@ export function AddDAOMember() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Input Field 1 : Member Name */}
-                <div>
-                    <label className="block text-sm font-semibold text-slate-300 mb-2">
-                        Member Name
-                    </label>
-                    <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all"
-                        placeholder="e.g., Dr. John Smith"
-                        required
-                    />
-                </div>
-                
-                {/* Input Field 2 : Wallet Address */}
+                {/* Input Field 1 : Wallet Address */}
                 <div>
                     <label className="block text-sm font-semibold text-slate-300 mb-2">
                         Wallet Address

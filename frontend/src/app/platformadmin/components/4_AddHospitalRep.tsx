@@ -50,23 +50,8 @@ export function AddHospitalRep() {
                 <h3 className="text-xl font-bold text-white">Add Hospital Representative</h3>
             </div>
 
-             {/* Input Field 1 : Hospital Name */}
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label className="block text-sm font-semibold text-slate-300 mb-2">
-                        Hospital Name
-                    </label>
-                    <input
-                        type="text"
-                        value={hospitalName}
-                        onChange={(e) => setHospitalName(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none transition-all"
-                        placeholder="e.g., City General Hospital"
-                        required
-                    />
-                </div>
-
-                 {/* Input Field 2 : Wallet Address */}
+                 {/* Input Field 1 : Wallet Address */}
                 <div>
                     <label className="block text-sm font-semibold text-slate-300 mb-2">
                         Wallet Address

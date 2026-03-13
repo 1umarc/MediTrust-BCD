@@ -170,6 +170,14 @@ export function MyCampaign() {
                         <div className="text-lg font-bold text-cyan-400">{formatEther(c.raised)} HETH</div>
                       </div>
                     </div>
+
+                    {/* View Details */}
+                    <Link
+                        href={`/campaigns/MilestoneClaimFormCreation?campaignID=${c.campaignID}`}
+                      className="block w-full text-center px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl font-bold hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/20"
+                    >
+                      Create Milestone Claim
+                    </Link>
                   </div>
                 </div>
               )

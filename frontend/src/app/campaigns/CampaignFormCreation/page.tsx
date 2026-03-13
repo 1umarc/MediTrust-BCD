@@ -1,6 +1,3 @@
-'use client'
-
-import React from 'react'
 import { CreataCampaignForm } from './CreateCampaignForm'
 
 export default function CampaignFormCreationPage() 
