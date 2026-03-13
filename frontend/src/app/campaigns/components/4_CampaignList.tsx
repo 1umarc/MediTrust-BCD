@@ -13,11 +13,6 @@ type FilterType = 'all' | 'active' | 'completed'
 export function CampaignList() {
     const [activeFilter, setActiveFilter] = useState<FilterType>('all')
 
-    // ========================================
-    // FETCH CAMPAIGN IDS FROM SMART CONTRACT
-    // ALL HOOKS AT TOP LEVEL - NO LOOPS!
-    // ========================================
-
     // Get all campaign IDs
     const { data: allCampaignIDsData } = useReadContract({
         address: campaignContractAddress as Address,
@@ -41,10 +36,7 @@ export function CampaignList() {
         args: [3]   // 3 = CampaignStatus.Completed
     })
 
-    // ========================================
-    // CONVERT TO JAVASCRIPT ARRAYS
-    // ========================================
-
+    // Convert to Javascript Arrays
     const allCampaignIDs = allCampaignIDsData 
         ? (allCampaignIDsData as bigint[]).map(id => Number(id))
         : []
@@ -57,29 +49,20 @@ export function CampaignList() {
         ? (completedIDsData as bigint[]).map(id => Number(id))
         : []
 
-    // ========================================
-    // CALCULATE COUNTS FOR FILTERS
-    // ========================================
-
+    // Calculate Counts for Filters Cal
     const campaignCounts = {
         all: allCampaignIDs.length,
         active: activeIDs.length,
         completed: completedIDs.length
     }
 
-    // ========================================
-    // FILTER BASED ON ACTIVE FILTER
-    // ========================================
-
+    // Filter based on Active Filter
     const filteredCampaignIDs =
         activeFilter === 'active' ? activeIDs :
         activeFilter === 'completed' ? completedIDs :
         allCampaignIDs
 
-    // ========================================
-    // FILTER BUTTONS
-    // ========================================
-
+    // Filter Buttons
     const filters: { id: FilterType; label: string; icon: string }[] = 
     [
         { 

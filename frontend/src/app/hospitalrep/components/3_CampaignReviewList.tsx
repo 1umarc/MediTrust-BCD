@@ -21,7 +21,7 @@ export function CampaignReviewList() {
     })
     const campaignID = Number(campaignCount)
 
-    // FETCH CAMPAIGN IDS FROM SMART CONTRACT
+    // Fetch Campaign IDs from Smart Contract
     const { data: pendingCampaignIDs } = useReadContract({
     address: campaignContractAddress as Address,
     abi: campaignAbi.abi,
@@ -49,7 +49,7 @@ export function CampaignReviewList() {
         functionName: 'getAllCampaignIDs'
     })
 
-    // CONVERT TO JAVASCRIPT ARRAYS
+    // Convert to Javascript Arrays
     const pendingIDs = pendingCampaignIDs
         ? (pendingCampaignIDs as bigint[]).map(id => Number(id))
         : []
@@ -66,7 +66,7 @@ export function CampaignReviewList() {
         ? (allCampaignIDs as bigint[]).map(id => Number(id))
         : []
 
-    // CALCULATE COUNTS FOR FILTERS
+    // Calculate Counts for Filters Cal
     const campaignCounts = {
         pending: pendingIDs.length,
         approved: approvedIDs.length,
@@ -74,7 +74,7 @@ export function CampaignReviewList() {
         all: allIDs.length
     }
 
-    // FILTER BASED ON ACTIVE FILTER
+    // Filter Buttons
     const filteredCampaignIds =
         activeFilter === 'pending' ? pendingIDs :
         activeFilter === 'approved' ? approvedIDs :
@@ -109,7 +109,6 @@ export function CampaignReviewList() {
     ]
 
     return (
-        
         <div className="space-y-8">
             {/* Campaign Reviews Filters - Pending, Approved, Rejected, All Campaigns */}
             <div className="flex items-center gap-3 mb-8">
