@@ -41,7 +41,7 @@ export function AdminStats() {
         },
         {
             label: 'Total Admins',
-            value: (daoMemberCount ? Number(daoMemberCount) : 0) + (hospitalRepCount ? Number(hospitalRepCount) : 0),
+            value: 1,
             icon: (<img src={Admin_TotalAdmin.src} alt="Admin Total Admins Icon" className="w-6 h-6" />),
             gradient: 'from-emerald-400 to-teal-500',
             bgGradient: 'from-emerald-500/10 to-teal-500/10',

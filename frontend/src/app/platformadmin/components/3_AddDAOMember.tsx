@@ -29,6 +29,13 @@ export function AddDAOMember() {
             abi: rolesAbi.abi,
             functionName: 'addDAOMember',
             args: [address as Address]
+        },
+        {
+            onError: (error) => {
+                // Extract the revert reason from the contract error
+                const message = error.message.match(/reason string '(.+?)'/)?.[1] 
+                print(message ?? '', 'error')
+            }
         })
     }
 

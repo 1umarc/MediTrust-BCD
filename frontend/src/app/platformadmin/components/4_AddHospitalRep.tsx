@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { Address, isAddress } from 'viem'
 import { print } from '@/utils/toast'
+import { useQueryClient } from '@tanstack/react-query'
 import rolesAbi from '@/abi/MediTrustRoles.json'
 import { rolesContractAddress } from '@/utils/smartContractAddress'
 import { Admin_AddHospitalReps } from '@/app/images'
@@ -12,6 +13,7 @@ export function AddHospitalRep() {
     const [address, setAddress] = useState('')
     const [hospitalName, setHospitalName] = useState('')
 
+    const queryClient = useQueryClient()
     const { data: hash, writeContract, isPending } = useWriteContract()
     const { isSuccess } = useWaitForTransactionReceipt({ hash })
 
@@ -28,11 +30,19 @@ export function AddHospitalRep() {
             abi: rolesAbi.abi,
             functionName: 'addHospitalRep',
             args: [address as Address]
+        },
+        {
+            onError: (error) => {
+                // Extract the revert reason from the contract error
+                const message = error.message.match(/reason string '(.+?)'/)?.[1] 
+                print(message ?? '', 'error')
+            }
         })
     }
 
     useEffect(() => {
             if (isSuccess) {
+            queryClient.invalidateQueries()
             print('Hospital Representative added successfully!', 'success')
             setAddress('')
             setHospitalName('')
