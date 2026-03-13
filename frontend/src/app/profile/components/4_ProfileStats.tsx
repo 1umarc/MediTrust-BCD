@@ -1,10 +1,10 @@
 'use client'
 import React from 'react'
-import { MoneyIcon, FireIcon, AdminGroupUsers } from '@/app/images'
+import { MoneyIcon, FireIcon, AdminGroupUsers } from '@/app/images' // Import icons used in the profile statistics cards
 
 export function ProfileStats() {
 
-  // Define data in an array
+  // Define the statistics displayed on the profile dashboard
   const ProfileStats = [
     {
       title: 'Total Raised',
@@ -26,35 +26,39 @@ export function ProfileStats() {
     },
   ]
 
+  // Display profile statistic cards on dashboard
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Generate a statistics card for each profile metric */}
       {ProfileStats.map((stat, index) => (
         <div key={index} className="relative group">
 
-          {/* Animated glow - Card border */}
+          {/* Decorative Glow Effect on Card Border */}
           <div className={`absolute -inset-0.5 bg-gradient-to-r ${stat.gradient} rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-500`}>
           </div>
 
-          {/* Create 3 Main card - Total Raised , Active Campaigns & Total Supporters*/}
+          {/* Statistics Card - Total Raised , Active Campaigns & Total Supporters*/}
           <div className="relative h-full bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 overflow-hidden hover:scale-[1.02] transition-transform duration-300">
 
             <div className="relative z-10">
               
-              {/* Title - Total Raised, Active Campaigns & Total Supporters*/}
+              {/* Card Header containing title and icon - Total Raised, Active Campaigns & Total Supporters*/}
               <div className="flex items-start mb-6">
                 <div className="flex-grow">
+                  
+                  {/* Statistic Title */}
                   <div className="text-slate-400 text-xs font-semibold mb-1 uppercase tracking-wider">
                     {stat.title}
                   </div>
                 </div>
 
-                {/* Icon */}
+                {/* Statistic Icon */}
                 <div className={`w-12 h-12 bg-gradient-to-br ${stat.gradient} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
                   {stat.icon}
                 </div>
               </div>
 
-              {/* Value - HETH 0 */}
+              {/* Statistic Value - HETH 0 */}
               <div
                 className={`text-4xl font-black mb-3 text-transparent bg-clip-text bg-gradient-to-r ${stat.gradient}`}>
                 {stat.value}

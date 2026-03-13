@@ -1,24 +1,26 @@
 'use client'
-import { useReadContract } from 'wagmi'
-import { Address } from 'viem'
-import rolesAbi from '@/abi/MediTrustRoles.json'
-import { rolesContractAddress } from '@/utils/smartContractAddress'
-import { Admin_HospitalReps, Admin_TotalAdmin, AdminGroupUsers } from '@/app/images'
+import { useReadContract } from 'wagmi' // Import hook to read data from smart contracts
+import { Address } from 'viem' // Import Ethereum address type
+import rolesAbi from '@/abi/MediTrustRoles.json' // Import roles smart contract ABI
+import { rolesContractAddress } from '@/utils/smartContractAddress' // Import deployed roles contract address
+import { Admin_HospitalReps, Admin_TotalAdmin, AdminGroupUsers } from '@/app/images' // Import icons used for the admin dashboard cards
 
 export function AdminStats() {
-    // Fetch counts from contract
+    // Get the total number of DAO members from the roles contract
     const { data: daoMemberCount } = useReadContract({
         address: rolesContractAddress as Address,
         abi: rolesAbi.abi,
         functionName: 'getTotalDAOMembers'
     })
 
+    // Get the total number of hospital representatives
     const { data: hospitalRepCount } = useReadContract({
         address: rolesContractAddress as Address,
         abi: rolesAbi.abi,
-        functionName: 'getTotalHospitalRep' //TODO: have not this function
+        functionName: 'getTotalHospitalRep' 
     })
 
+    // Define the statistics shown on the admin dashboard
     const stats = [
         {
             label: 'DAO Members',
@@ -47,22 +49,30 @@ export function AdminStats() {
         }
     ]
 
+    // Display platform admin statistics cards on dashboard
     return (
         <div className = "mb-12">
+            {/* Display admin statistics cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Generate a card for each statistic */}
                 {stats.map((stat, index) => (
                     <div key={index} className="group relative">
-                        {/* Glow Effect for each stat card */}
+                        {/* Decorative Glow Effect */}
                         <div className={`absolute -inset-0.5 bg-gradient-to-r ${stat.gradient} rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-500`}>
                         </div>
+                        {/* Statistics Card */}
                         <div className={`relative bg-gradient-to-br ${stat.bgGradient} backdrop-blur-xl border ${stat.borderColor} rounded-2xl p-6`}>
                             <div className="flex items-start justify-between mb-4">
+                                {/* Statistic Label */}
                                 <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">{stat.label}</div>
+                                
+                                {/* Statistic Icon */}
                                 <div className={`w-12 h-12 bg-gradient-to-br ${stat.gradient} rounded-xl flex items-center justify-center shadow-lg`}>
                                     {stat.icon}
                                 </div>
                             </div>
                             
+                            {/* Statistic Value */}
                             <div className={`text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r ${stat.gradient}`}>
                                 {stat.value}
                             </div>

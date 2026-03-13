@@ -1,54 +1,55 @@
 'use client'
-import { useReadContract } from 'wagmi'
-import { Address, formatEther } from 'viem'
-import campaignAbi from '@/abi/MediTrustCampaign.json'
-import { campaignContractAddress } from '@/utils/smartContractAddress'
-import { OnGoingIcon, TotalCampaignIcon, Approve, MoneyIcon } from '@/app/images'
+import { useReadContract } from 'wagmi' // Import hook to read data from smart contracts
+import { Address, formatEther } from 'viem' // Import Ethereum types and utilities
+import campaignAbi from '@/abi/MediTrustCampaign.json' // Import campaign smart contract ABI
+import { campaignContractAddress } from '@/utils/smartContractAddress' // Import deployed campaign contract address
+import { OnGoingIcon, TotalCampaignIcon, Approve, MoneyIcon } from '@/app/images' // Import icons used in the statistics cards
 
 export function CampaignStats() {
 
-    // 1. Get total campaign count
+    // Get total number of campaigns from the contract
     const { data: campaignCount } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
         functionName: 'campaignCount'
     })
 
+    // Convert campaign count to a number
     const count = campaignCount ? Number(campaignCount) : 0
 
-    // 2. Get approved campaigns count (Ongoing)
-    // Uses getCampaignCount(status) with status = 1 (Approved)
+    // Get number of campaigns that are currently approved (Ongoing)
+    // status = 1 represents "Approved"
     const { data: approvedCount } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
         functionName: 'getCampaignCount',
-        args: [1]  // 1 = CampaignStatus.Approved
+        args: [1]  
     })
 
-     // 3. Get completed campaigns count
-    // Uses getCampaignCount(status) with status = 3 (Completed)
+     // Get cnumber of campaigns that are completed
+    // status = 3 represents "Completed"
     const { data: completedCount } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
         functionName: 'getCampaignCount',
-        args: [3]  // 3 = CampaignStatus.Completed
+        args: [3]  
     })
 
-    // 4. Get total raised
+    // Get total amount of funds raised from all campaigns
     const { data: totalRaisedData } = useReadContract({
         address: campaignContractAddress as Address,
         abi: campaignAbi.abi,
         functionName: 'getTotalRaised'  
     })
 
-    // Calculate statistics
+    // Convert blockchain data into statistics
     const totalCampaigns = campaignCount ? Number(campaignCount) : 0
     const ongoingCampaigns = approvedCount ? Number(approvedCount) : 0
     const completedCampaigns = completedCount ? Number(completedCount) : 0
     const totalRaised = totalRaisedData ? Number(totalRaisedData) : Number(0)
 
 
-    // Define data in an array
+    // Stores campaign statistics data to display on dashboard cards
     const stats = [
         {
             label: 'Total Campaigns',
@@ -84,30 +85,34 @@ export function CampaignStats() {
         }
     ]
 
-// Frontend Code
+    // Display campaign statistics cards on dashboard
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {stats.map((stat, index) => (
                 <div key={index} className="group relative">
-                    {/* Glow effect */}
+                    {/* Decorative Glow Effect */}
                     <div className={`absolute -inset-0.5 bg-gradient-to-r ${stat.gradient} rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-500`}></div>
                     
-                    {/* Card */}
+                    {/* Statistics Card */}
                     <div className={`relative bg-gradient-to-br ${stat.bgGradient} backdrop-blur-xl border ${stat.borderColor} rounded-2xl p-6`}>
                         <div className="flex items-start justify-between mb-4">
+                            {/* Statistics Label */}
                             <div className="flex-grow">
                                 <div className="text-slate-400 text-xs font-semibold mb-1 uppercase tracking-wider">{stat.label}</div>
                             </div>
+                            
+                            {/* Icon for Statistics */}
                             <div className={`w-12 h-12 bg-gradient-to-br ${stat.gradient} rounded-xl flex items-center justify-center shadow-lg`}>
                                 {stat.icon}
                             </div>
                         </div>
                         
+                        {/* Statistic Value */}
                         <div className={`text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r ${stat.gradient}`}>
                             {stat.value}
                         </div>
 
-                        {/* Progress bar decoration */}
+                        {/* Decorative Progress Bar */}
                         <div className="mt-4 h-1 bg-slate-800/50 rounded-full overflow-hidden">
                             <div className={`h-full bg-gradient-to-r ${stat.gradient} rounded-full w-3/4`}></div>
                         </div>
