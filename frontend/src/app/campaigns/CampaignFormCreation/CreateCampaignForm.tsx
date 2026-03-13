@@ -133,10 +133,8 @@ export function CreataCampaignForm()
 
         {
             print('Error creating campaign', 'error')
-        } finally 
-        {
             setUploading(false)
-        }
+        } 
     }
 
   useEffect(() => {
