@@ -11,7 +11,7 @@ import { getFromIPFS } from '@/utils/ipfsconfig'
 
 // New Changes : move the useEffect under the 3 hooks before 'if (!campaign) return null'
 interface CampaignReviewCardProps {
-    campaignID: 1 //FIXME: CampaignID
+    campaignID: number
 }
 
 export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {

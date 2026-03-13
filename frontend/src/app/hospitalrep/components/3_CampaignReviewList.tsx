@@ -13,60 +13,110 @@ type FilterType = 'pending' | 'approved' | 'rejected' | 'all'
 export function CampaignReviewList() {
     const [activeFilter, setActiveFilter] = useState<FilterType>('pending')
 
-    // TODO: Testing with mock data for now (no wallet connected yet)
-    /* Fetch campaign count
-    // const { data: campaignCount } = useReadContract({
-    //     address: campaignContractAddress as Address,
-    //     abi: campaignAbi.abi,
-    //     functionName: 'campaignCount'
+    // Fetch campaign count
+    const { data: campaignCount } = useReadContract({
+        address: campaignContractAddress as Address,
+        abi: campaignAbi.abi,
+        functionName: 'campaignCount'
+    })
+    const campaignID = Number(campaignCount)
+
+    const { data: pendingCampaignIDs } = useReadContract({
+    address: campaignContractAddress as Address,
+    abi: campaignAbi.abi,
+    functionName: 'getCampaignIDs',
+    args: [0] // Pending
+    })
+
+    const { data: approvedCampaignIDs } = useReadContract({
+        address: campaignContractAddress as Address,
+        abi: campaignAbi.abi,
+        functionName: 'getCampaignIDs',
+        args: [1] // Approved
+    })
+
+    const { data: rejectedCampaignIDs } = useReadContract({
+        address: campaignContractAddress as Address,
+        abi: campaignAbi.abi,
+        functionName: 'getCampaignIDs',
+        args: [2] // Rejected
+    })
+
+    const { data: allCampaignIDs } = useReadContract({
+        address: campaignContractAddress as Address,
+        abi: campaignAbi.abi,
+        functionName: 'getAllCampaignIDs'
+    })
+
+    const pendingIDs = pendingCampaignIDs
+        ? Array.from(pendingCampaignIDs as readonly bigint[]).map((id) => Number(id))
+        : []
+
+    const approvedIDs = approvedCampaignIDs
+        ? Array.from(approvedCampaignIDs as readonly bigint[]).map((id) => Number(id))
+        : []
+
+    const rejectedIDs = rejectedCampaignIDs
+        ? Array.from(rejectedCampaignIDs as readonly bigint[]).map((id) => Number(id))
+        : []
+
+    const allIDs = allCampaignIDs
+        ? Array.from(allCampaignIDs as readonly bigint[]).map((id) => Number(id))
+        : []
+
+    const campaignCounts = {
+        pending: pendingIDs.length,
+        approved: approvedIDs.length,
+        rejected: rejectedIDs.length,
+        all: allIDs.length
+    }
+    const filteredCampaignIds =
+        activeFilter === 'pending' ? pendingIDs :
+        activeFilter === 'approved' ? approvedIDs :
+        activeFilter === 'rejected' ? rejectedIDs :
+        allIDs
+        
+    // const campaignStatuses = allCampaignIds.map(id => {
+    //     const { data: campaign } = useReadContract({
+    //         address: campaignContractAddress as Address,
+    //         abi: campaignAbi.abi,
+    //         functionName: 'getCampaign',
+    //         args: [id]
+    //     })
+    //     return campaign ? (campaign as any)[5] : null // status at index 5
     // })
 
-    const count = campaignCount ? Number(campaignCount) : 0
-
-    // Fetch all campaign statuses for filtering
-    const allCampaignIds = Array.from({ length: count }, (_, i) => i)
-    
-    const campaignStatuses = allCampaignIds.map(id => {
-        const { data: campaign } = useReadContract({
-            address: campaignContractAddress as Address,
-            abi: campaignAbi.abi,
-            functionName: 'getCampaign',
-            args: [id]
-        })
-        return campaign ? (campaign as any)[5] : null // status at index 5
-    })
-
-    // Filter campaigns
-    const filteredCampaignIds = allCampaignIds.filter((id, index) => {
-        const status = campaignStatuses[index]
-        if (status === null) return false
+    // // Filter campaigns
+    // const filteredCampaignIds = allCampaignIds.filter((id, index) => {
+    //     const status = campaignStatuses[index]
+    //     if (status === null) return false
         
-        switch (activeFilter) {
-            case 'pending':
-                return status === 0
-            case 'approved':
-                return status === 1
-            case 'rejected':
-                return status === 2
-            default:
-                return true
-        }
-    })
+    //     switch (activeFilter) {
+    //         case 'pending':
+    //             return status === 0
+    //         case 'approved':
+    //             return status === 1
+    //         case 'rejected':
+    //             return status === 2
+    //         default:
+    //             return true
+    //     }
+    // })
 
-    // Calculate counts
-    const campaignCounts = {
-        pending: campaignStatuses.filter(s => s === 0).length,
-        approved: campaignStatuses.filter(s => s === 1).length,
-        rejected: campaignStatuses.filter(s => s === 2).length,
-        all: allCampaignIds.length
-    }
-    */  
+    // // Calculate counts
+    // const campaignCounts = {
+    //     pending: campaignStatuses.filter(s => s === 0).length,
+    //     approved: campaignStatuses.filter(s => s === 1).length,
+    //     rejected: campaignStatuses.filter(s => s === 2).length,
+    //     all: allCampaignIds.length
+    // }
+    // */  
 
-    //TODO: Mock data for testing without wallet connection
-    // ADD this instead:
-    const allCampaignIds = [0]
-    const filteredCampaignIds = [0]
-    const campaignCounts = { pending: 1, approved: 0, rejected: 0, all: 0 }
+    // //TODO: Mock data for testing without wallet connection
+    // // ADD this instead:
+    // const allCampaignIds = [0]
+    // const filteredCampaignIds = [0]
+    // const campaignCounts = { pending: 1, approved: 0, rejected: 0, all: 0 }
 
     const filters: { id: FilterType; label: string; icon: string }[] = 
     [
@@ -132,7 +182,10 @@ export function CampaignReviewList() {
             {filteredCampaignIds.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredCampaignIds.map((campaignID) => (
-                        <CampaignReviewCard key={campaignID} campaignID={campaignID} />
+                        <CampaignReviewCard
+                            key={campaignID}
+                            campaignID={campaignID}
+                        />
                     ))}
                 </div>
             ) : (

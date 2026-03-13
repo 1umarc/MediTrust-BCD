@@ -150,7 +150,7 @@ contract MediTrustCampaign
     {
         uint256 total = 0;
         
-        for (uint256 i = 0; i <= campaignCount; i++) 
+        for (uint256 i = 0; i < campaignCount; i++) 
         {
             total += campaigns[i].raised;
         }
@@ -176,7 +176,7 @@ contract MediTrustCampaign
     {
         uint256 count = 0;
 
-        for (uint256 i = 0; i <= campaignCount; i++) 
+        for (uint256 i = 0; i < campaignCount; i++) 
         {
             if (campaigns[i].status == status) 
             {
