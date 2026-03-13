@@ -108,10 +108,8 @@ export function CreataCampaignForm()
               description: formData.CampaignDescription,
               duration: formData.CampaignDuration,
               imagehash: imageHash,
-              reason: ""
             });
 
-            //XXX: remove log
             console.log("Image saved to IPFS:", imageHash);
             console.log("Diagnosis saved to IPFS:", diagnosisHash);
             console.log("Quotation saved to IPFS:", quotationHash);
@@ -123,10 +121,14 @@ export function CreataCampaignForm()
                 abi: campaignAbi.abi,
                 functionName: 'submitCampaign',
                 args: [parseEther(formData.TargetAmount), parseInt(formData.CampaignDuration), diagnosisHash, quotationHash]
+            },
+            {
+              onError: (error) => {
+                  // Extract the revert reason from the contract error
+                  const message = error.message.match(/reason string '(.+?)'/)?.[1] 
+                  print(message ?? '', 'error')
+              }
             })
-
-            // TODO: Set the submitted state to true immediately for testing purpose
-            setSubmitted(true)
         } catch (error) 
 
         {
