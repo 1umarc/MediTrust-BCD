@@ -121,6 +121,13 @@ export function CreataCampaignForm()
                 abi: campaignAbi.abi,
                 functionName: 'submitCampaign',
                 args: [parseEther(formData.TargetAmount), parseInt(formData.CampaignDuration), diagnosisHash, quotationHash]
+            },
+            {
+              onError: (error) => {
+                  // Extract the revert reason from the contract error
+                  const message = error.message.match(/reason string '(.+?)'/)?.[1] 
+                  print(message ?? '', 'error')
+              }
             })
         } catch (error) 
 
