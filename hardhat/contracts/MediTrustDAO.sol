@@ -67,7 +67,7 @@ contract MediTrustDAO
         require(bytes(invoiceHash).length > 0, "Try again, Invoice hash required");
 
         // Error checking for patient of campaign
-        (address campaignPatient,,,,,,) = campaignContract.getCampaign(campaignID);
+        (address campaignPatient,,,,,,,) = campaignContract.getCampaign(campaignID);
         require(msg.sender == campaignPatient, "Unable to submit, not patient of this campaign");
         
         // Increment milestoneClaimCount
@@ -195,6 +195,23 @@ contract MediTrustDAO
         MilestoneClaim storage milestoneClaim = claims[claimID];
         return (milestoneClaim.yesCount, milestoneClaim.noCount);
     }
+
+    function getMilestoneClaimVotingStats(uint256 claimID) external view returns (uint256 totalVotes, uint256 approvalRate, uint256 quorumAchieved, uint256 totalDAOMembers, bool approved) 
+    {
+        MilestoneClaim storage milestoneClaim = claims[claimID];
+        totalVotes = milestoneClaim.yesCount + milestoneClaim.noCount;
+        
+        totalDAOMembers = roleContract.getTotalDAOMembers();
+
+        // Calculate QUORUM: (totalVotes * 100) / totalDAOMembers
+        quorumAchieved = totalDAOMembers > 0 ? Math.mulDiv(totalVotes, 100, totalDAOMembers) : 0;
+
+        // Calculate APPROVAL: (yesCount * 100) / totalVotes
+        approvalRate = totalVotes > 0 ? Math.mulDiv(milestoneClaim.yesCount, 100, totalVotes) : 0;
+
+        // Approved if quorum ≥ 50% AND approval ≥ 60%
+        approved = quorumAchieved >= quorumPercentage && approvalRate >= approvalPercentage;
+    }
     
     function getVoted(uint256 claimID, address DAOMember) external view returns (bool) 
     {
@@ -217,7 +234,7 @@ contract MediTrustDAO
         emit MilestoneClaimExecute(claimID, claims[claimID].amount);
     }
 
-    function getMilestoneClaimCount(uint256 MilestoneType) external view returns (uint256)
+    function getMilestoneClaimCount(uint256 MilestoneType) public view returns (uint256)
     {
         // type: 0 = Pending, 1 = Approved, 2 = Released, 3 = All
 
@@ -225,11 +242,11 @@ contract MediTrustDAO
 
         for (uint256 i = 0; i < claimCount; i++)
         {
-            if (MilestoneType == 0 && !claims[i].executed)
+            if (MilestoneType == 0 && !isMilestoneClaimApproved(i) && !claims[i].executed) 
             {
                 total++;
             }
-            else if (MilestoneType == 1 && isMilestoneClaimApproved(i))
+            else if (MilestoneType == 1 && isMilestoneClaimApproved(i)) 
             {
                 total++;
             }
@@ -244,5 +261,42 @@ contract MediTrustDAO
         }
 
         return total;
+    }
+
+    // Retrive milestone claim IDs for a specific status
+    function getMilestoneClaimIDs(uint256 milestoneStatus) external view returns (uint256[] memory) 
+    {
+        // Allocate array
+        uint256[] memory IDs = new uint256[](getMilestoneClaimCount(milestoneStatus));
+
+        // Fill array
+        uint256 index = 0;
+        for (uint256 i = 0; i < claimCount; i++) 
+        {
+            if (milestoneStatus == 0 && !isMilestoneClaimApproved(i) && !claims[i].executed) 
+            {
+                IDs[index] = i;
+                index++;
+            }
+            else if (milestoneStatus == 1 && isMilestoneClaimApproved(i)) 
+            {
+                IDs[index] = i;
+                index++;
+            }
+        }
+
+        return IDs;
+    }
+
+    // Retrive all milestone claim IDs
+    function getAllMilestoneClaimIDs() external view returns (uint256[] memory) 
+    {
+        uint256[] memory IDs = new uint256[](claimCount);
+
+        for (uint256 i = 0; i < claimCount; i++) 
+        {
+            IDs[i] = i;
+        }
+        return IDs;
     }
 }

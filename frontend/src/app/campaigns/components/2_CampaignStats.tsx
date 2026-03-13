@@ -46,7 +46,7 @@ export function CampaignStats() {
     const totalCampaigns = campaignCount ? Number(campaignCount) : 0
     const ongoingCampaigns = approvedCount ? Number(approvedCount) : 0
     const completedCampaigns = completedCount ? Number(completedCount) : 0
-    const totalRaised = totalRaisedData ? Number(totalRaisedData) : Number(0)
+    const totalRaised = totalRaisedData ? parseFloat(formatEther(totalRaisedData as bigint)) : 0
 
 
     // Stores campaign statistics data to display on dashboard cards

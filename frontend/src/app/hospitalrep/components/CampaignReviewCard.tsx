@@ -45,24 +45,36 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
         }
     }, [isSuccess])
 
-    if (!campaign) return null      // If 'campaign' is empty , don't show the card"
+    //if (!campaign) return null
+    if (!campaign || !campaignDetails) return null
 
-    const [patient, target, raised, duration, diagnosisHash, quotationHash, status] = campaign as any[] // Takes the array and splits it into separate variables
+    const [patient, target, raised, duration, diagnosisHash, quotationHash, status, startDate] = campaign as any[] // Takes the array and splits it into separate variables
+    // Gray out when Approved / Denied, but still leaving it clickable for the contract to handle errors
+    const isPendingReview = status === 0
+
+    const expiryTimestamp = Number(startDate) + Number(duration) * 86400
+    const expiryDate = new Date(expiryTimestamp * 1000)
     
-    if (status !== 0) return null // Only show campaigns that are waiting for review (pending)
-
-    const expiryDate = new Date(Number(duration) * 1000)
     const raisedEth = parseFloat(formatEther(raised))
     const targetEth = parseFloat(formatEther(target))
     const progressPercent = Math.min((raisedEth / targetEth) * 100, 100)
 
     const handleApprove = () => {
-        writeContract({
-            address: campaignContractAddress as Address,
-            abi: campaignAbi.abi,
-            functionName: 'approveCampaign',
-            args: [campaignID]
-        })
+        writeContract(
+            {
+                address: campaignContractAddress as Address,
+                abi: campaignAbi.abi,
+                functionName: 'approveCampaign',
+                args: [campaignID]
+            },
+            {
+                onError: (error) => {
+                    // Extract the revert reason from the contract error
+                    const message = error.message.match(/reason string '(.+?)'/)?.[1] 
+                    print(message ?? '', 'error')
+                }
+            }
+        )
     }
 
     const handleReject = () => {
@@ -70,13 +82,21 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
             print('Please provide a rejection reason', 'error')
             return
         }
-
-        writeContract({
-            address: campaignContractAddress as Address,
-            abi: campaignAbi.abi,
-            functionName: 'rejectCampaign',
-            args: [campaignID]
-        })
+        writeContract(
+            {
+                address: campaignContractAddress as Address,
+                abi: campaignAbi.abi,
+                functionName: 'rejectCampaign',
+                args: [campaignID]
+            },
+            {
+                onError: (error) => {
+                    // Extract the revert reason from the contract error
+                    const message = error.message.match(/reason string '(.+?)'/)?.[1] 
+                    print(message ?? '', 'error')
+                }
+            }
+        )
     }
 
      return (
@@ -88,14 +108,18 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                 <div className="flex items-start justify-between px-6 pt-6 pb-4">
                     <div>
                         <h3 className="text-lg font-black text-white leading-tight">
-                            {campaignDetails[campaignID].title}
+                            {campaignDetails[campaignID]?.title}
                         </h3>
                         <p className="text-xs text-slate-500 font-mono mt-1">
                             {patient.slice(0, 6)}...{patient.slice(-4)}
                         </p>
                     </div>
-                    <span className="flex-shrink-0 px-3 py-1.5 bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded-full text-xs font-bold">
-                        ⏳ Pending
+                    <span className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${
+                        status === 0 ? 'bg-amber-500/20 border border-amber-500/30 text-amber-300' :
+                        status === 1 ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300' :
+                                       'bg-red-500/20 border border-red-500/30 text-red-300'
+                    }`}>
+                        {status === 0 ? 'Pending' : status === 1 ? 'Approved' : 'Rejected'}
                     </span>
                 </div>
 
@@ -103,7 +127,7 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                 <div className="px-6 mb-5">
                     <div className="w-full h-44 rounded-xl overflow-hidden border border-slate-700/50 bg-slate-800/50 flex items-center justify-center">
                         <img
-                            src={ getFromIPFS(campaignDetails[campaignID].imagehash) }
+                            src={ getFromIPFS(campaignDetails[campaignID]?.imagehash) }
                             alt="Campaign"
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -196,22 +220,31 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                 {/* Action Buttons */}
                 <div className="px-6 pb-6">
                     {!showRejectForm ? (
-                        <div className="grid grid-cols-2 gap-3">
-                            <button
-                                onClick={() => setShowRejectForm(true)}
-                                disabled={isPending}
-                                className="px-4 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-bold hover:from-red-400 hover:to-pink-500 disabled:opacity-50 transition-all text-sm shadow-lg shadow-red-500/20"
-                            >
-                                Reject
-                            </button>
-                            <button
-                                onClick={handleApprove}
-                                disabled={isPending}
-                                className="px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold hover:from-emerald-400 hover:to-teal-500 disabled:opacity-50 transition-all text-sm shadow-lg shadow-emerald-500/20"
-                            >
-                                {isPending ? 'Processing...' : ' Approve'}
-                            </button>
-                        </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            onClick={() => setShowRejectForm(true)}
+                            disabled={isPending}
+                            className={`px-4 py-3 rounded-xl font-bold transition-all text-sm ${
+                                isPendingReview
+                                    ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white hover:from-red-400 hover:to-pink-500 shadow-lg shadow-red-500/20'
+                                    : 'bg-slate-700 border border-slate-600 text-slate-300 hover:bg-slate-600'
+                            } ${isPending ? 'opacity-50' : ''}`}
+                        >
+                            Reject
+                        </button>
+
+                        <button
+                            onClick={handleApprove}
+                            disabled={isPending}
+                            className={`px-4 py-3 rounded-xl font-bold transition-all text-sm ${
+                                isPendingReview
+                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-400 hover:to-teal-500 shadow-lg shadow-emerald-500/20'
+                                    : 'bg-slate-700 border border-slate-600 text-slate-300 hover:bg-slate-600'
+                            } ${isPending ? 'opacity-50' : ''}`}
+                        >
+                            {isPending ? 'Processing...' : 'Approve'}
+                        </button>
+                    </div>
                     ) : (
                         <div className="space-y-3">
                             <textarea

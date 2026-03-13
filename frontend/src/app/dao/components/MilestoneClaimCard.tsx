@@ -1,73 +1,64 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
-import { Address } from 'viem'
+import { useEffect } from 'react'
+import { useWriteContract, useWaitForTransactionReceipt, useReadContract, useAccount } from 'wagmi'
+import { Address, formatEther } from 'viem'
 import { print } from '@/utils/toast'
-import { useQueryClient } from '@tanstack/react-query'
-import campaignAbi from '@/abi/MediTrustCampaign.json'
-import { campaignContractAddress } from '@/utils/smartContractAddress'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
+import daoAbi from '@/abi/MediTrustDAO.json'
+import { DAOContractAddress } from '@/utils/smartContractAddress'
+import { getFromDB } from '@/utils/dbconfig'
+import { getFromIPFS } from '@/utils/ipfsconfig'
 
 interface MilestoneClaimCardProps {
-    campaignID: number
     claimID: number
 }
 
-export function MilestoneClaimCard({ campaignID, claimID}: MilestoneClaimCardProps) {
-    const [viewingProof, setViewingProof] = useState(false)
+export function MilestoneClaimCard({ claimID }: MilestoneClaimCardProps) {
+    const { address } = useAccount()
 
-  // // Fetch milestone claim data
-  // const { data: milestoneClaim } = useReadContract({
-  //   address: campaignContractAddress as Address,
-  //   abi: campaignAbi.abi,
-  //   functionName: 'getMilestoneClaimDetails',
-  //   args: [claimID],
-  // });
+    // Fetch milestone claim data from contract
+    const { data: milestoneClaim } = useReadContract({
+        address: DAOContractAddress as Address,
+        abi: daoAbi.abi,
+        functionName: 'getMilestoneClaimDetails',
+        args: [claimID]
+    })
 
-  // // Fetch voting data
-  // const { data: votingData } = useReadContract({
-  //   address: campaignContractAddress as Address,
-  //   abi: campaignAbi.abi,
-  //   functionName: 'getMilestoneClaimVotes',
-  //   args: [claimID],
-  // });
+    // Fetch if current user has voted
+    const { data: hasVoted } = useReadContract({
+        address: DAOContractAddress as Address,
+        abi: daoAbi.abi,
+        functionName: 'getVoted',
+        args: [claimID, address],
+        query: { enabled: !!address }
+    })
 
-      // DUMMY DATA
-    const milestoneClaim = [
-        'Patient has completed chemotherapy session 1 at Hospital Kuala Lumpur and requires funds for session 2.',
-        '5000',                          // amount in RM
-        'QmProofHashForMilestoneProof',  // proofHash
-        BigInt(Date.now()),              // timestamp
-        false                            // isApproved
-    ]
+    // Fetch current user's vote choice (only valid if hasVoted is true)
+    const { data: userVote } = useReadContract({
+        address: DAOContractAddress as Address,
+        abi: daoAbi.abi,
+        functionName: 'getVoteChoice',
+        args: [claimID, address],
+        query: { enabled: !!address && hasVoted === true }
+    })
 
-    const votingData = [
-        BigInt(10),   // totalVotes
-        BigInt(7),    // approvalVotes (7/10 = 70%)
-        false,        // hasVoted
-        false         // userVote
-    ]
+    // Fetch voting stats from DAO contract (totalVotes, approvalRate, participationRate, approved)
+    const { data: votingStats } = useReadContract({
+        address: DAOContractAddress as Address,
+        abi: daoAbi.abi,
+        functionName: 'getMilestoneClaimVotingStats',
+        args: [claimID]
+    })
+
+    // Fetch milestone claim details from DB
+    const { data: milestoneDetails } = useQuery({
+        queryKey: ['milestoneclaimdetails'],
+        queryFn: () => getFromDB('milestoneclaimdetails'),
+    })
 
     const queryClient = useQueryClient()
     const { data: hash, writeContract, isPending } = useWriteContract()
     const { isSuccess } = useWaitForTransactionReceipt({ hash })
-
-    //TODO:uncomment when connect to real blockchain
-    // if (!milestoneClaim || !votingData) return null
-
-    const [description, amount, invoiceHash, isApproved] = milestoneClaim as any[]
-    const [totalVotes, approvalVotes, hasVoted, userVote] = votingData as any[]
-
-    const approvalPercentage = totalVotes > 0 ? (Number(approvalVotes) / Number(totalVotes)) * 100 : 0
-    const participationPercentage = 50 // This should come from contract (totalVotes / totalDAOMembers * 100)
-
-    const handleVote = (newVote: boolean) => {
-    writeContract({
-      address: campaignContractAddress as Address,
-      abi: campaignAbi.abi,
-      functionName: 'vote',
-      args: [claimID, newVote],
-    });
-  };
 
     useEffect(() => {
         if (isSuccess) {
@@ -76,78 +67,127 @@ export function MilestoneClaimCard({ campaignID, claimID}: MilestoneClaimCardPro
         }
     }, [isSuccess])
 
-  // Status badge
-  const getStatusBadge = () => {
-    if (isApproved) {
-      return (
-        <span className="px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-full text-xs font-bold">
-          ✓ Approved
-        </span>
-            )
+    if (!milestoneClaim || !milestoneDetails || !votingStats) return null
+
+    const [campaignID, patient, amount, invoiceHash, yesCount, noCount, executed, startDate] = milestoneClaim as any[]
+
+    // Voting stats retrieved directly from DAO contract (no frontend calculation needed)
+    const [totalVotes, approvalRate, quorumAchieved, totalDAOMembers, isApproved] = votingStats as any[]
+
+    // Vote handler - calls MediTrustDAO.vote()
+    const handleVote = (newVote: boolean) => {
+        writeContract(
+            {
+                address: DAOContractAddress as Address,
+                abi: daoAbi.abi,
+                functionName: 'vote',
+                args: [claimID, newVote],
+            },
+            {
+                onError: (error) => {
+                    const message = error.message.match(/reason string '(.+?)'/)?.[1]
+                    print(message ?? '', 'error')
+                }
+            }
+        )
     }
-    if (participationPercentage >= 50 && approvalPercentage >= 60) {
-      return (
-        <span className="px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-full text-xs font-bold">
-          Ready for Approval
-        </span>
+
+    // Status badge
+    const getStatusBadge = () => {
+        if (executed) {
+            return (
+                <span className="flex-shrink-0 px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-full text-xs font-bold">
+                    💰 Funds Released
+                </span>
             )
-    }
-    return (
-      <span className="px-3 py-1.5 bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded-full text-xs font-bold">
-        ⏳ Pending Votes
-      </span>
+        }
+        if (isApproved) {
+            return (
+                <span className="flex-shrink-0 px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-full text-xs font-bold">
+                    ✅ Approved
+                </span>
+            )
+        }
+        return (
+            <span className="flex-shrink-0 px-3 py-1.5 bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded-full text-xs font-bold">
+                ⏳ Pending Votes
+            </span>
         )
     }
 
     return (
         <div className="group relative">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
-            
-            <div className="relative bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
-                {/* Header */}
-                <div className="flex justify-between items-start mb-4">
+
+            <div className="relative bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl">
+                {/* Header - Milestone Title & Status */}
+                <div className="flex items-start justify-between px-6 pt-6 pb-4">
                     <div>
-                        <h3 className="text-xl font-bold text-white mb-1">
-                            Milestone #{claimID}
+                        <h3 className="text-lg font-black text-white leading-tight">
+                            {milestoneDetails[claimID]?.title ?? `Milestone #${claimID}`}
                         </h3>
+                        <p className="text-xs text-slate-500 font-mono mt-1">
+                            Campaign #{Number(campaignID)} · {patient.slice(0, 6)}...{patient.slice(-4)}
+                        </p>
                     </div>
                     {getStatusBadge()}
                 </div>
 
                 {/* Description */}
-                <div className="mb-6">
-                    <p className="text-slate-300 leading-relaxed">{description}</p>
-                </div>
+                {milestoneDetails[claimID]?.description && (
+                    <div className="px-6 mb-5">
+                        <p className="text-sm text-slate-300 leading-relaxed">
+                            {milestoneDetails[claimID].description}
+                        </p>
+                    </div>
+                )}
 
                 {/* Claim Amount */}
-                <div className="bg-slate-800/50 rounded-xl p-4 mb-6">
-                    <div className="text-xs text-slate-500 mb-1 font-semibold">Claim Amount</div>
-                    <div className="text-2xl font-bold text-cyan-400">{amount} HETH</div>
+                <div className="px-6 mb-4">
+                    <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
+                        <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Claim Amount</div>
+                        <div className="text-2xl font-black text-cyan-400">{formatEther(amount)} HETH</div>
+                    </div>
                 </div>
 
-                {/* Voting Progress */}
-                <div className="mb-6">
+                {/* Voting Progress - Approval Rate */}
+                <div className="px-6 mb-4">
                     <div className="flex justify-between text-sm mb-2">
                         <span className="text-slate-400 font-semibold">Approval Rate</span>
-                        <span className="text-emerald-400 font-bold">{approvalPercentage.toFixed(1)}%</span>
+                        <span className="text-emerald-400 font-bold">{Number(approvalRate)}%</span>
                     </div>
-                    <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden mb-2">
-                        <div 
-                            className="bg-gradient-to-r from-emerald-500 to-teal-600 h-3 rounded-full transition-all duration-500"
-                            style={{ width: `${approvalPercentage}%` }}
-                        >
-                            <div className="h-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
-                        </div>
+                    <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden mb-2">
+                        <div
+                            className="bg-gradient-to-r from-emerald-500 to-teal-600 h-full rounded-full transition-all duration-500"
+                            style={{ width: `${Number(approvalRate)}%` }}
+                        />
                     </div>
                     <div className="flex justify-between text-xs text-slate-500">
-                        <span>{Number(approvalVotes)} Approve / {Number(totalVotes)} Total Votes</span>
-                        <span>Need: 60% approval + 50% participation</span>
+                        <span>{Number(yesCount)} Approve / {Number(noCount)} Reject</span>
+                        <span>Need: ≥ 60% approval</span>
                     </div>
                 </div>
 
-                <div className="mb-5 space-y-2">
+                {/* Voting Progress - Participation Rate */}
+                <div className="px-6 mb-4">
+                    <div className="flex justify-between text-sm mb-2">
+                        <span className="text-slate-400 font-semibold">Participation</span>
+                        <span className="text-purple-400 font-bold">{Number(quorumAchieved)}%</span>
+                    </div>
+                    <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden mb-2">
+                        <div
+                            className="bg-gradient-to-r from-purple-500 to-pink-600 h-full rounded-full transition-all duration-500"
+                            style={{ width: `${Math.min(Number(quorumAchieved), 100)}%` }}
+                        />
+                    </div>
+                    <div className="flex justify-between text-xs text-slate-500">
+                        <span>{Number(totalVotes)} / {Number(totalDAOMembers)} DAO Members voted</span>
+                        <span>Need: ≥ 50% quorum</span>
+                    </div>
+                </div>
 
-                    {/* Invoice */}
+                {/* Invoice Download */}
+                <div className="px-6 mb-5">
                     <div className="flex items-center justify-between p-3 bg-slate-800/30 border border-slate-700/50 rounded-xl">
                         <div className="flex items-center gap-2 min-w-0">
                             <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -156,7 +196,7 @@ export function MilestoneClaimCard({ campaignID, claimID}: MilestoneClaimCardPro
                             <span className="text-sm text-slate-300 font-medium truncate">Invoice.pdf</span>
                         </div>
                         <a
-                            // href={`${dummyMetadata.medicalDiagnosisCid}`}
+                            href={getFromIPFS(invoiceHash)}
                             download
                             className="flex-shrink-0 ml-3 flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-lg hover:bg-cyan-500/20 transition-all text-xs font-bold"
                         >
@@ -167,42 +207,52 @@ export function MilestoneClaimCard({ campaignID, claimID}: MilestoneClaimCardPro
                         </a>
                     </div>
                 </div>
-                
 
-                {/* Voting Buttons */}
-                {!isApproved && (
-                    <div className="grid grid-cols-2 gap-4">
-                        <button
-                            onClick={() => handleVote(false)}
-                            disabled={isPending}
-                            className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-bold hover:from-red-400 hover:to-pink-500 disabled:opacity-50 transition-all shadow-lg shadow-red-500/20"
-                        >
-                            {isPending ? 'Voting...' : hasVoted && !userVote ? '✓ Voted Reject' : 'Reject'}
-                        </button>
-                        <button
-                            onClick={() => handleVote(true)}
-                            disabled={isPending}
-                            className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold hover:from-emerald-400 hover:to-teal-500 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20"
-                        >
-                            {isPending ? 'Voting...' : hasVoted && userVote ? '✓ Voted Approve' : 'Approve'}
-                        </button>
-                    </div>
-                )}
+                {/* Voting Buttons - Only show if NOT executed */}
+                <div className="px-6 pb-6">
+                    {!executed ? (
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => handleVote(false)}
+                                    disabled={isPending}
+                                    className={`px-4 py-3 rounded-xl font-bold transition-all text-sm ${
+                                        hasVoted && userVote === false
+                                            ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white shadow-lg shadow-red-500/20 ring-2 ring-red-400/50'
+                                            : 'bg-gradient-to-r from-red-500 to-pink-600 text-white hover:from-red-400 hover:to-pink-500 shadow-lg shadow-red-500/20'
+                                    } ${isPending ? 'opacity-50' : ''}`}
+                                >
+                                    {isPending ? 'Voting...' : hasVoted && userVote === false ? '✓ Voted Reject' : 'Reject'}
+                                </button>
+                                <button
+                                    onClick={() => handleVote(true)}
+                                    disabled={isPending}
+                                    className={`px-4 py-3 rounded-xl font-bold transition-all text-sm ${
+                                        hasVoted && userVote === true
+                                            ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20 ring-2 ring-emerald-400/50'
+                                            : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-400 hover:to-teal-500 shadow-lg shadow-emerald-500/20'
+                                    } ${isPending ? 'opacity-50' : ''}`}
+                                >
+                                    {isPending ? 'Voting...' : hasVoted && userVote === true ? '✓ Voted Approve' : 'Approve'}
+                                </button>
+                            </div>
 
-                {/* User Vote Status */}
-                {hasVoted && !isApproved && (
-                    <div className="mt-4 text-center text-sm text-slate-400">
-                        <p>You can change your vote at any time before approval</p>
-                    </div>
-                )}
-
-                {isApproved && (
-                    <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center">
-                        <p className="text-emerald-300 font-semibold">
-                            ✓ Milestone approved! Funds have been released.
-                        </p>
-                    </div>
-                )}
+                            {/* Revote hint */}
+                            {Boolean (hasVoted) && (
+                                <p className="text-center text-xs text-slate-500">
+                                    You can change your vote at any time before funds are released
+                                </p>
+                            )}
+                        </div>
+                    ) : (
+                        /* Funds Released Message */
+                        <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl text-center">
+                            <p className="text-blue-300 font-semibold">
+                                💰 Milestone approved and funds have been released.
+                            </p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     )

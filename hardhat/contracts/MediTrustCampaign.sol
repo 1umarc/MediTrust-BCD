@@ -107,7 +107,7 @@ contract MediTrustCampaign
     }
     
     // * Getters & Setters: Campaign * //
-    function getCampaign(uint256 campaignID) external view returns (address patient, uint256 target, uint256 raised, uint256 duration, string memory diagnosisHash, string memory quotationHash, CampaignStatus status) 
+    function getCampaign(uint256 campaignID) external view returns (address patient, uint256 target, uint256 raised, uint256 duration, string memory diagnosisHash, string memory quotationHash, CampaignStatus status, uint256 startDate) 
     {
         Campaign storage campaign = campaigns[campaignID]; // temporarily read from mapping
         return // return tuple
@@ -118,7 +118,8 @@ contract MediTrustCampaign
             campaign.duration,
             campaign.diagnosisHash,
             campaign.quotationHash,
-            campaign.status
+            campaign.status,
+            campaign.startDate
         );
     }
 

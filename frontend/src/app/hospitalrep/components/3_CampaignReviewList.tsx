@@ -21,6 +21,7 @@ export function CampaignReviewList() {
     })
     const campaignID = Number(campaignCount)
 
+    // FETCH CAMPAIGN IDS FROM SMART CONTRACT
     const { data: pendingCampaignIDs } = useReadContract({
     address: campaignContractAddress as Address,
     abi: campaignAbi.abi,
@@ -48,75 +49,38 @@ export function CampaignReviewList() {
         functionName: 'getAllCampaignIDs'
     })
 
+    // CONVERT TO JAVASCRIPT ARRAYS
     const pendingIDs = pendingCampaignIDs
-        ? Array.from(pendingCampaignIDs as readonly bigint[]).map((id) => Number(id))
+        ? (pendingCampaignIDs as bigint[]).map(id => Number(id))
         : []
 
     const approvedIDs = approvedCampaignIDs
-        ? Array.from(approvedCampaignIDs as readonly bigint[]).map((id) => Number(id))
+        ? (approvedCampaignIDs as bigint[]).map(id => Number(id))
         : []
 
     const rejectedIDs = rejectedCampaignIDs
-        ? Array.from(rejectedCampaignIDs as readonly bigint[]).map((id) => Number(id))
+        ? (rejectedCampaignIDs as bigint[]).map(id => Number(id))
         : []
 
     const allIDs = allCampaignIDs
-        ? Array.from(allCampaignIDs as readonly bigint[]).map((id) => Number(id))
+        ? (allCampaignIDs as bigint[]).map(id => Number(id))
         : []
 
+    // CALCULATE COUNTS FOR FILTERS
     const campaignCounts = {
         pending: pendingIDs.length,
         approved: approvedIDs.length,
         rejected: rejectedIDs.length,
         all: allIDs.length
     }
+
+    // FILTER BASED ON ACTIVE FILTER
     const filteredCampaignIds =
         activeFilter === 'pending' ? pendingIDs :
         activeFilter === 'approved' ? approvedIDs :
         activeFilter === 'rejected' ? rejectedIDs :
         allIDs
-        
-    // const campaignStatuses = allCampaignIds.map(id => {
-    //     const { data: campaign } = useReadContract({
-    //         address: campaignContractAddress as Address,
-    //         abi: campaignAbi.abi,
-    //         functionName: 'getCampaign',
-    //         args: [id]
-    //     })
-    //     return campaign ? (campaign as any)[5] : null // status at index 5
-    // })
 
-    // // Filter campaigns
-    // const filteredCampaignIds = allCampaignIds.filter((id, index) => {
-    //     const status = campaignStatuses[index]
-    //     if (status === null) return false
-        
-    //     switch (activeFilter) {
-    //         case 'pending':
-    //             return status === 0
-    //         case 'approved':
-    //             return status === 1
-    //         case 'rejected':
-    //             return status === 2
-    //         default:
-    //             return true
-    //     }
-    // })
-
-    // // Calculate counts
-    // const campaignCounts = {
-    //     pending: campaignStatuses.filter(s => s === 0).length,
-    //     approved: campaignStatuses.filter(s => s === 1).length,
-    //     rejected: campaignStatuses.filter(s => s === 2).length,
-    //     all: allCampaignIds.length
-    // }
-    // */  
-
-    // //TODO: Mock data for testing without wallet connection
-    // // ADD this instead:
-    // const allCampaignIds = [0]
-    // const filteredCampaignIds = [0]
-    // const campaignCounts = { pending: 1, approved: 0, rejected: 0, all: 0 }
 
     const filters: { id: FilterType; label: string; icon: string }[] = 
     [
