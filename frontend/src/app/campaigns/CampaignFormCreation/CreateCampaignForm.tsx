@@ -126,7 +126,7 @@ export function CreataCampaignForm()
               onError: (error) => {
                   // Extract the revert reason from the contract error
                   const message = error.message.match(/reason string '(.+?)'/)?.[1] 
-                  print(message ?? '', 'error')
+                  print(message ?? 'Campaign submission failed', 'error')
               }
             })
         } catch (error) 
@@ -275,7 +275,6 @@ export function CreataCampaignForm()
                   className="flex items-center justify-center w-full px-4 py-8 bg-slate-800/30 border-2 border-dashed border-slate-700 rounded-xl cursor-pointer hover:border-cyan-500/50 transition-all"
                 >
                   <div className="text-center">
-                      {/* TODO: remember to add icon at this line*/}
                     <p className="text-slate-400 text-sm">
                       {formData.CampaignImage ? formData.CampaignImage.name : 'Click to upload campaign image'}
                     </p>

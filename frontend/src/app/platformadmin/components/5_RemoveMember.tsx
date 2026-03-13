@@ -41,7 +41,7 @@ export function RemoveMember({ type }: RemoveMemberProps) {
             onError: (error) => {
                 // Extract the revert reason from the contract error
                 const message = error.message.match(/reason string '(.+?)'/)?.[1] 
-                print(message ?? '', 'error')
+                print(message ?? 'Removing member failed', 'error')
             }
         }
     )

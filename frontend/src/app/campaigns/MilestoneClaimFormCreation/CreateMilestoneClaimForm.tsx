@@ -81,7 +81,6 @@ export function CreateMilestoneClaimForm()
                 description: formData.MilestoneClaimDescription,
             })
 
-            // FIXME: REMOVE LOG
             console.log("Invoice IPFS CID:", invoiceHash)
             console.log("Saved to DB:", saved.record)
 

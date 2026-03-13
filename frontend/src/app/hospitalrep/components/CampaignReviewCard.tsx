@@ -27,10 +27,17 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
     })
  
     // Fetch campaign data from DB
-    const { data: campaignDetails, } = useQuery({
+    const { data: campaignDetail, } = useQuery({
     queryKey: ['campaigndetails'],     // array identifying the query
     queryFn: () => getFromDB('campaigndetails'),  // function returning a Promise
     })
+
+    // Map DB in reverse order
+    const campaignDetails = campaignDetail
+    ? Object.fromEntries(
+        [...(campaignDetail as any[])].reverse().map((c, index) => [index, c])
+      )
+    : {}
 
     const queryClient = useQueryClient()    // When data changes (approve/reject), it refreshes everything
     const { data: hash, writeContract, isPending } = useWriteContract()
@@ -71,7 +78,7 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                 onError: (error) => {
                     // Extract the revert reason from the contract error
                     const message = error.message.match(/reason string '(.+?)'/)?.[1] 
-                    print(message ?? '', 'error')
+                    print(message ?? 'Campagin approval failed', 'error')
                 }
             }
         )
@@ -93,7 +100,7 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                 onError: (error) => {
                     // Extract the revert reason from the contract error
                     const message = error.message.match(/reason string '(.+?)'/)?.[1] 
-                    print(message ?? '', 'error')
+                    print(message ?? 'Campaign rejection failed', 'error')
                 }
             }
         )
@@ -122,6 +129,13 @@ export function CampaignReviewCard({ campaignID }: CampaignReviewCardProps) {
                         {status === 0 ? 'Pending' : status === 1 ? 'Approved' : 'Rejected'}
                     </span>
                 </div>
+
+                {/* Description (from DB) */}
+                {campaignDetails[campaignID]?.description && (
+                    <p className="text-slate-400 text-sm mb-4 px-6 line-clamp-2">
+                        {campaignDetails[campaignID].description}
+                    </p>
+                )}
 
                 {/* Campaign Image */}
                 <div className="px-6 mb-5">

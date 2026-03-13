@@ -27,6 +27,7 @@ function CampaignCard({ campaignID }: { campaignID: number })
         queryKey: ['campaigndetails'],
         queryFn: () => getFromDB('campaigndetails'),
     })
+    
 
     // Wait for both sources
     if (!campaign || !campaignDetails) return null

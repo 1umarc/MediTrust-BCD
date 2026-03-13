@@ -27,10 +27,17 @@ export function CampaignCard({ campaignID }: CampaignCardProps) {
     })
 
     // Fetch campaign data from DB
-    const { data: campaignDetails } = useQuery({
+    const { data: campaignDetail } = useQuery({
         queryKey: ['campaigndetails'],
         queryFn: () => getFromDB('campaigndetails'),
     })
+
+    // Map DB in reverse order
+    const campaignDetails = campaignDetail
+    ? Object.fromEntries(
+        [...(campaignDetail as any[])].reverse().map((c, index) => [index, c])
+      )
+    : {}
 
     const queryClient = useQueryClient()
     const { data: hash, writeContract, isPending } = useWriteContract()
@@ -113,6 +120,14 @@ export function CampaignCard({ campaignID }: CampaignCardProps) {
                         {currentStatus.icon} {currentStatus.label}
                     </span>
                 </div>
+
+                {/* Description (from DB) */}
+                {campaignDetails[campaignID]?.description && (
+                    <p className="text-slate-400 text-sm mb-4 px-6 line-clamp-2">
+                        {campaignDetails[campaignID].description}
+                    </p>
+                )}
+
 
                 {/* Campaign Image */}
                 <div className="px-6 mb-5">

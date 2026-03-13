@@ -51,10 +51,17 @@ export function MilestoneClaimCard({ claimID }: MilestoneClaimCardProps) {
     })
 
     // Fetch milestone claim details from DB
-    const { data: milestoneDetails } = useQuery({
+    const { data: milestoneDetail } = useQuery({
         queryKey: ['milestoneclaimdetails'],
         queryFn: () => getFromDB('milestoneclaimdetails'),
     })
+
+    // Map DB in reverse order
+    const milestoneDetails = milestoneDetail
+    ? Object.fromEntries(
+        [...(milestoneDetail as any[])].reverse().map((c, index) => [index, c])
+      )
+    : {}
 
     const queryClient = useQueryClient()
     const { data: hash, writeContract, isPending } = useWriteContract()
@@ -86,7 +93,7 @@ export function MilestoneClaimCard({ claimID }: MilestoneClaimCardProps) {
             {
                 onError: (error) => {
                     const message = error.message.match(/reason string '(.+?)'/)?.[1]
-                    print(message ?? '', 'error')
+                    print(message ?? 'Voting failed', 'error')
                 }
             }
         )
