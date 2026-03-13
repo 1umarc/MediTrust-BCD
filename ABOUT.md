@@ -1,0 +1,14 @@
+# 🏥 Welcome to MediTrust! 🏥
+
+MediTrust is a **blockchain-based DAO-governed** medical donation platform developed to improve **transparency**, **accountability**, and **trust** in online medical donation systems. The system enables patients who require financial support for medical treatment to **create fundraising campaigns**, while donors can contribute funds through a **secure decentralized platform**. By leveraging blockchain technology, MediTrust ensures that all donation transactions are recorded on a distributed ledger, which **prevents unauthorized modification** or **manipulation** of financial records.
+
+Traditional medical crowdfunding platforms typically operate under centralized architectures where a single organization controls campaign
+information, donation records, and fund distribution. This centralized control introduces several risks, such as data manipulation, misuse of funds, and fraudulent campaigns. Donors often have limited visibility into how their contributions are used after donations are made, which can reduce confidence in the platform.
+
+MediTrust addresses these limitations by using **blockchain technology** and **smart contracts** to manage donation **transactions** and **fund distribution**. Smart contracts automatically enforce rules defined within the system, ensuring that funds are handled according to predefined conditions without relying on centralized administrators. This automated process reduces the risk of human error and **improves transparency** in financial operations.
+
+Another important feature of MediTrust is the use of a **permissioned Decentralized Autonomous Organization (DAO) governance model**. In this governance structure, trusted participants such as **medical professionals** and **verified donors** participate in **decision-making** processes related to fund release. When a patient requests funds for treatment through milestone claims, DAO members **review** the supporting documents and **vote** on whether the request should be approved.
+
+To protect sensitive medical information, MediTrust uses **decentralized storage technology** such as the **InterPlanetary File System (IPFS)**. Medical documents including **diagnosis reports**, **treatment quotations**, and **invoices** are stored on IPFS, while only the **cryptographic hash** of the document is stored on the blockchain. This ensures that the documents cannot be altered without detection while protecting patient privacy.
+
+Overall, MediTrust aims to transform medical crowdfunding into a **transparent** and **trustworthy ecosystem** where donation transactions are **verifiable**, fund allocation decisions are **collectively governed**, and patient data is **securely protected**.
