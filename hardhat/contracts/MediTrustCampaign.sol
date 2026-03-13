@@ -48,13 +48,8 @@ contract MediTrustCampaign
     {
         roleContract = MediTrustRoles(roleAddress);
     }
-
-    // Events: campaign submission, approval, rejection, completion
-    event CampaignSubmit(uint256 indexed campaignID, address indexed patient, uint256 target, string diagnosisHash, string quotationHash);
-    event CampaignApprove(uint256 indexed campaignID);
-    event CampaignReject(uint256 indexed campaignID);
-    event CampaignComplete(uint256 indexed campaignID); // XXX: not used
         
+
     // * Campaign Actions * //
     function submitCampaign(uint256 target, uint256 duration, string memory diagnosisHash, string memory quotationHash) external
     {
@@ -77,8 +72,6 @@ contract MediTrustCampaign
         newCampaign.quotationHash = quotationHash;
         newCampaign.status = CampaignStatus.Pending;
         newCampaign.startDate = block.timestamp;
-
-        emit CampaignSubmit(campaignID, msg.sender, target, diagnosisHash, quotationHash); // Trigger event
     }
 
     function approveCampaign(uint256 campaignID) external 
@@ -88,22 +81,25 @@ contract MediTrustCampaign
         // store permenantly in mapping
         Campaign storage campaign = campaigns[campaignID];
 
+        // Prevent hospital rep from approving their own campaign
+        require(msg.sender != campaign.patient, "Unable to approve, cannot approve your own campaign");
         require(campaign.status == CampaignStatus.Pending, "Unable to approve, campaign not pending");
         require(block.timestamp <= campaign.startDate + (campaign.duration * 86400), "Unable to approve, campaign expired"); // 86400 = seconds in a day
         
         campaign.status = CampaignStatus.Approved;
-        emit CampaignApprove(campaignID);
     }
     
     function rejectCampaign(uint256 campaignID) external // memory = store temporarily
     {
     require(roleContract.isHospitalRep(msg.sender), "Sorry, only hospital representatives can reject");
+    
 
     Campaign storage campaign = campaigns[campaignID];
+    // Prevent hospital rep from rejecting their own campaign
+    require(msg.sender != campaign.patient, "Unable to reject, cannot reject your own campaign");
     require(campaign.status == CampaignStatus.Pending, "Unable to reject, campaign not pending");
 
     campaign.status = CampaignStatus.Rejected;
-    emit CampaignReject(campaignID);
     }
     
     // * Getters & Setters: Campaign * //
@@ -142,7 +138,6 @@ contract MediTrustCampaign
         if (campaigns[campaignID].raised >= campaigns[campaignID].target)  // check if target reached to complete
         {
             campaigns[campaignID].status = CampaignStatus.Completed;
-            emit CampaignComplete(campaignID);
         }
     }
 

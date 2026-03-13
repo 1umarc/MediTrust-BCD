@@ -215,9 +215,24 @@ export function MilestoneClaimCard({ claimID }: MilestoneClaimCardProps) {
                     </div>
                 </div>
 
-                {/* Voting Buttons - Only show if NOT executed */}
+                {/* Voting Buttons */}
                 <div className="px-6 pb-6">
-                    {!executed ? (
+                    {executed ? (
+                        /* Funds Released Message */
+                        <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl text-center">
+                            <p className="text-blue-300 font-semibold">
+                                💰 Milestone approved and funds have been released.
+                            </p>
+                        </div>
+                    ) : isApproved ? (
+                        /* Approved but not yet executed (e.g. insufficient campaign funds at time of vote) */
+                        <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center">
+                            <p className="text-emerald-300 font-semibold">
+                                ✅ Milestone approved! Awaiting fund release.
+                            </p>
+                        </div>
+                    ) : (
+                        /* Pending Votes - Active voting */
                         <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-3">
                                 <button
@@ -245,18 +260,11 @@ export function MilestoneClaimCard({ claimID }: MilestoneClaimCardProps) {
                             </div>
 
                             {/* Revote hint */}
-                            {Boolean (hasVoted) && (
+                            {Boolean(hasVoted) && (
                                 <p className="text-center text-xs text-slate-500">
                                     You can change your vote at any time before funds are released
                                 </p>
                             )}
-                        </div>
-                    ) : (
-                        /* Funds Released Message */
-                        <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl text-center">
-                            <p className="text-blue-300 font-semibold">
-                                💰 Milestone approved and funds have been released.
-                            </p>
                         </div>
                     )}
                 </div>

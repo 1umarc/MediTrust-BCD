@@ -18,6 +18,9 @@ const DeploymentModule = buildModule("MediTrustDeployment", (m) => { // m = modu
     // Set FundsContract in MediTrustCampaign
     m.call(MediTrustCampaign, "setFundsContract", [MediTrustFunds]);
     
+    // Set FundsContract in MediTrustDAO
+    m.call(MediTrustDAO, "setFundsContract", [MediTrustFunds]);
+    
     return { 
         MediTrustRoles, 
         MediTrustCampaign, 

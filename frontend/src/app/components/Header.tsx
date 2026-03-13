@@ -46,30 +46,7 @@ export function Header() {
         }
     }, [isPlatformAdmin, isConnected])
     
-    // TODO: TEMPORARY DISPLAYING FOR TESTING (DELETE WHEN DONE TESTING)
-    const getUserRole = () => {
-        if (!isConnected || !address) return null
-        
-        if (isPlatformAdmin) return { 
-            label: '👨‍💼 Admin', 
-            color: 'from-purple-500 to-pink-500' 
-        }
-        if (isHospitalRep) return { 
-            label: '🏥 Hospital Rep', 
-            color: 'from-cyan-500 to-blue-500' 
-        }
-        if (isDAOMember) return { 
-            label: '🗳️ DAO Member', 
-            color: 'from-emerald-500 to-teal-500' 
-        }
-        return { 
-            label: '👤 Patient', 
-            color: 'from-slate-500 to-slate-600' 
-        }
-    }
-
-    const userRole = getUserRole()
-
+   
 // Frontend Code 
 return ( 
         <header className='fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-800'>
@@ -108,13 +85,6 @@ return (
                                 <NavLink href="/platformadmin">Admin</NavLink>
                             )}
                         
-                        {/* Role Badge - shows user's current role */}
-                        {userRole && (
-                            <div className={`px-4 py-2 bg-gradient-to-r ${userRole.color} rounded-lg text-white text-sm font-bold shadow-lg`}>
-                                {userRole.label}
-                            </div>
-                        )}
-
                         <Connect />
                     </nav>
 

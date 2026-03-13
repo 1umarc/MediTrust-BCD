@@ -28,10 +28,6 @@ contract MediTrustFunds is ReentrancyGuard
         DAOContract = MediTrustDAO(DAOAddress);
     }
     
-    // Events: donation, release
-    event DonationReceive(uint256 indexed campaignID, address indexed donor, uint256 amount);
-    event FundsRelease(uint256 indexed campaignID, uint256 indexed claimID, address indexed patient, uint256 amount);
-    
     // * Donation Action * //
     function donate(uint256 campaignID) external payable nonReentrant  // payable = function can receive Ether
     {
@@ -40,12 +36,14 @@ contract MediTrustFunds is ReentrancyGuard
         require(campaignID < campaignContract.campaignCount(), "Unable to donate, invalid campaign ID");
         require(campaignContract.isCampaignActive(campaignID), "Unable to donate, campaign inactive");
 
+        // Prevent patient from donating to their own campaign
+        (address campaignPatient,,,,,,,) = campaignContract.getCampaign(campaignID);
+        require(msg.sender != campaignPatient, "Unable to donate, cannot donate to your own campaign");
+
         // Add donation amount to the 2 mappings     
         campaignBalance[campaignID] += msg.value;
         donation[campaignID][msg.sender] += msg.value;
         campaignContract.setRaised(campaignID, msg.value); // update campaign with new raised amount
-        
-        emit DonationReceive(campaignID, msg.sender, msg.value);
     }
 
     // * Release Action * //
@@ -67,7 +65,6 @@ contract MediTrustFunds is ReentrancyGuard
         // Transfer funds to patient (External call at the end + Re-entrant = secure)
         (bool sent, ) = payable(patient).call{value: amount}(""); // .call = sends the Value which is amount, "" = no data because it is a wallet transfer, not a contract call
         require(sent, "Error, fund transfer failed"); // if false = reverts state
-        emit FundsRelease(campaignID, claimID, patient, amount);
     }
     
     // * Gettters & Setters: Funds * //
@@ -79,5 +76,23 @@ contract MediTrustFunds is ReentrancyGuard
     function getDonation(uint256 campaignID, address donor) external view returns (uint256) 
     {
         return donation[campaignID][donor]; // mapping is ID and donor address
+    }
+
+    function getTotalReceived(address patient) external view returns (uint256)
+    {
+        uint256 total = 0;
+        uint256 totalClaims = DAOContract.claimCount();
+
+        for (uint256 i = 0; i < totalClaims; i++)
+        {
+            (, address claimPatient, uint256 amount, , , , bool executed, ) = DAOContract.getMilestoneClaimDetails(i);
+            
+            if (executed && claimPatient == patient)
+            {
+                total += amount;
+            }
+        }
+
+        return total;
     }
 }

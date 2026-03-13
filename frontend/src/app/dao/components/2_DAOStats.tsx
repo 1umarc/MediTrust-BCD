@@ -1,33 +1,32 @@
 'use client'
 import { useReadContract } from 'wagmi' // Import hook to read data from smart contracts
-import { Address } from 'viem' // Import Ethereum address type
-import campaignAbi from '@/abi/MediTrustCampaign.json' // Import campaign smart contract ABI
-import { campaignContractAddress } from '@/utils/smartContractAddress' // Import deployed campaign contract address
+import { Address, formatEther } from 'viem' // Import Ethereum address type and ETH formatter
+import daoAbi from '@/abi/MediTrustDAO.json' // Import DAO smart contract ABI
+import { DAOContractAddress } from '@/utils/smartContractAddress' // Import deployed DAO contract address
 import { Pending, Approve, MoneyIcon } from '@/app/images' // Import icons used in the statistics cards
 
 export function DAOStats() {
     // Get the number of milestone claims that are waiting for DAO votes
     const { data: pendingClaims } = useReadContract({
-        address: campaignContractAddress as Address,
-        abi: campaignAbi.abi,
+        address: DAOContractAddress as Address,
+        abi: daoAbi.abi,
         functionName: "getMilestoneClaimCount",
-        args: [0] // Pending
+        args: [0] // 0 = Pending (not approved & not executed)
     })
 
     // Get the number of milestone claims that are approved by the DAO
     const { data: approvedClaims } = useReadContract({
-        address: campaignContractAddress as Address,
-        abi: campaignAbi.abi,
+        address: DAOContractAddress as Address,
+        abi: daoAbi.abi,
         functionName: "getMilestoneClaimCount",
-        args: [1] // Approved
+        args: [1] // 1 = Approved
     })
 
-    // Get the number of claims where funds have already been released
+    // Get the total amount of funds released (sum of executed claim amounts in wei)
     const { data: totalFundsReleased } = useReadContract({
-        address: campaignContractAddress as Address,
-        abi: campaignAbi.abi,
-        functionName: "getMilestoneClaimCount",
-        args: [2] // Funds Released
+        address: DAOContractAddress as Address,
+        abi: daoAbi.abi,
+        functionName: "getTotalFundsReleased"
     })
 
     // Store DAO statistics data to display on dashboard 
@@ -51,7 +50,7 @@ export function DAOStats() {
         },
         {
             label: 'Total Released',
-            value: totalFundsReleased ? `${Number(totalFundsReleased)} HETH` : 'HETH 0',
+            value: totalFundsReleased ? `${formatEther(totalFundsReleased as bigint)} HETH` : '0 HETH',
             icon: ( <img src={MoneyIcon.src} alt= "Money Icon" className = "w-7 h-7" />),
             gradient: 'from-purple-400 to-pink-500',
             bgGradient: 'from-purple-500/10 to-pink-500/10',

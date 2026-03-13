@@ -6,6 +6,15 @@ import "./MediTrustCampaign.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol"; // for mulDiv, prevents integer overflow
 
 /**
+ * @notice Interface for MediTrustFunds (avoids circular import since MediTrustFunds already imports MediTrustDAO)
+ */
+interface IMediTrustFunds 
+{
+    function executeMilestoneClaim(uint256 claimID) external;
+}
+
+
+/**
  * @title MediTrustDAO
  * @notice Permissioned DAO governance for Milestone Claims of the MediTrust Campaign
  */
@@ -51,13 +60,8 @@ contract MediTrustDAO
         roleContract = MediTrustRoles(roleAddress);
         campaignContract = MediTrustCampaign(campaignAddress);
     }
-    
-    // Events: Milestone Claim submission, vote casting, vote change, approval, and execution
-    event MilestoneClaimSubmit(uint256 indexed claimID, uint256 indexed campaignID, address indexed patient, uint256 amount, string invoiceHash);
-    event VoteCast(uint256 indexed claimID, address indexed DAOMember, bool voteChoice);
-    event VoteChange(uint256 indexed claimID, address indexed DAOMember, bool voteChoice);
-    event MilestoneClaimExecute(uint256 indexed claimID, uint256 amount);
 
+    
     // * Milestone Claim Action * //
     function submitMilestoneClaim(uint256 campaignID, uint256 amount, string memory invoiceHash) external returns (uint256) 
     {
@@ -82,8 +86,7 @@ contract MediTrustDAO
         newClaim.yesCount = 0;
         newClaim.noCount = 0;
         newClaim.startDate = block.timestamp;
-        
-        emit MilestoneClaimSubmit(claimID, campaignID, msg.sender, amount, invoiceHash);
+    
         return claimID;
     }
     
@@ -97,6 +100,9 @@ contract MediTrustDAO
         MilestoneClaim storage milestoneClaim = claims[claimID];
         require(!milestoneClaim.executed, "Unable to vote, claim already executed");
         
+         // Prevent patient from voting on their own milestone claim
+        require(msg.sender != milestoneClaim.patient, "Unable to vote, cannot vote on your own milestone claim");
+
         // Check if user has already voted   
         if (milestoneClaim.voted[msg.sender]) 
         {
@@ -125,7 +131,6 @@ contract MediTrustDAO
 
                 // Update vote
                 milestoneClaim.voteChoice[msg.sender] = newVote;
-                emit VoteChange(claimID, msg.sender, newVote);
             }
         } 
         else 
@@ -143,7 +148,16 @@ contract MediTrustDAO
             // Set as voted, add to mapping
             milestoneClaim.voted[msg.sender] = true;  
             milestoneClaim.voteChoice[msg.sender] = newVote;
-            emit VoteCast(claimID, msg.sender, newVote);
+        }
+    
+        // Auto-execute: If both thresholds are met, release funds to patient automatically
+        // try/catch ensures vote still succeeds even if execution fails (e.g. insufficient campaign funds)
+        if (isMilestoneClaimApproved(claimID) && !milestoneClaim.executed && fundsAddress != address(0)) 
+        {
+            try IMediTrustFunds(fundsAddress).executeMilestoneClaim(claimID) 
+            {
+            } 
+            catch {} // Silently fail if insufficient funds, vote is still recorded
         }
     }
     
@@ -174,6 +188,13 @@ contract MediTrustDAO
         return approvalRate >= approvalPercentage;
     }
     
+    // Set Funds Contract Address (one-time only)
+    function setFundsContract(address funds) external 
+    {
+        require(fundsAddress == address(0), "Unauthorized, funds contract already set");
+        fundsAddress = funds;
+    }
+
     function getMilestoneClaimDetails(uint256 claimID) external view returns (uint256 campaignID, address patient, uint256 amount, string memory invoiceHash, uint256 yesCount, uint256 noCount, bool executed, uint256 startDate) //desc
     {
         MilestoneClaim storage milestoneClaim = claims[claimID]; // temporarily read from mapping
@@ -231,7 +252,6 @@ contract MediTrustDAO
         require(isMilestoneClaimApproved(claimID), "Unable to execute, claim not approved");
         require(!claims[claimID].executed, "Unable to execute, claim already executed");
         claims[claimID].executed = true;        // set milestoneClaim as executed
-        emit MilestoneClaimExecute(claimID, claims[claimID].amount);
     }
 
     function getMilestoneClaimCount(uint256 MilestoneType) public view returns (uint256)

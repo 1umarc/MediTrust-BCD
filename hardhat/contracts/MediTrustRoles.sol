@@ -23,13 +23,7 @@ contract MediTrustRoles is Ownable
     {
 
     }
-    
-    // Events: role changes, address used as indexed parameter for easy filtering
-    event hospitalRepAdd(address indexed rep);
-    event hospitalRepRemove(address indexed rep);
-    event DAOMemberAdd(address indexed member);
-    event DAOMemberRemove(address indexed member);
- 
+     
     // * Modifiers for Role-based Access Control (RBAC) * //
     modifier onlyHospitalRep() 
     {
@@ -47,10 +41,10 @@ contract MediTrustRoles is Ownable
     function addHospitalRep(address rep) external onlyOwner // Only owner can, from Ownable
     {
        
+        require(rep != owner(), "Unable to add, platform admin cannot be a hospital representative");
         require(!hospitalRepresentatives[rep], "Unable to add, already a hospital representative");
         hospitalRepresentatives[rep] = true; // Add to address mapping
         totalHospitalRep++;
-        emit hospitalRepAdd(rep); // Emit add event
     }
     
     function removeHospitalRep(address rep) external onlyOwner  // external = only can be called by other contracts
@@ -58,7 +52,6 @@ contract MediTrustRoles is Ownable
         require(hospitalRepresentatives[rep], "Unable to remove, not a hospital representative");
         hospitalRepresentatives[rep] = false;
         totalHospitalRep--;
-        emit hospitalRepRemove(rep);
     }
 
     // * Platform Administrator add/remove DAO Members * //
@@ -67,17 +60,16 @@ contract MediTrustRoles is Ownable
         require(!DAOMembers[member], "Unable to add, already a DAO member");
         DAOMembers[member] = true;
         totalDAOMembers++; // Increment total count
-        emit DAOMemberAdd(member);
     }
     
     function removeDAOMember(address member) external onlyOwner 
     {
+        require(member != owner(), "Unable to add, platform admin cannot be a DAO member");
         require(DAOMembers[member], "Unable to remove, not a DAO member");
         require(totalDAOMembers > 1, "Cannot remove last DAO member");
 
         DAOMembers[member] = false;
         totalDAOMembers--;
-        emit DAOMemberRemove(member);
     }
     
     // * Getters & Setters: Role-based Access Control (RBAC) * //
@@ -105,5 +97,4 @@ contract MediTrustRoles is Ownable
     {
         return totalHospitalRep;
     }
-
 }
