@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS campaigndetails
     title TEXT NOT NULL,
     description TEXT NOT NULL,
     duration INTEGER NOT NULL,
-    imagehash TEXT,
+    imagehash TEXT
 );
 
 CREATE TABLE IF NOT EXISTS milestoneclaimdetails 
